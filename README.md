@@ -24,7 +24,7 @@ This repository contains a Django implementation for managing various aspects of
 
     ```bash
     git clone https://github.com/BoostrNetWave/Freelance_Student_App.git
-    cd student_project_django
+    cd Freelance_Student_App
     ```
 
 2. **Create and activate a virtual environment:**
