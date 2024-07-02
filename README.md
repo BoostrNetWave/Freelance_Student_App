@@ -23,7 +23,7 @@ This repository contains a Django implementation for managing various aspects of
 1. **Clone the repository:**
 
     ```bash
-    git clone https://github.com/TheSurya555/student_project_django.git
+    git clone https://github.com/BoostrNetWave/Freelance_Student_App.git
     cd student_project_django
     ```
 
