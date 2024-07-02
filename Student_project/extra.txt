@@ -1,0 +1,1487 @@
+                {% comment %} <div class="collapse navbar-collapse" id="navbarText">
+                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0 mt-4 mt-lg-0">
+                        <li class="nav-item"><a class="nav-link" href="{% url "studentpost" %}">Posts</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url "services" %}">Services</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url "talents" %}">Talents</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url "contactus" %}">Contact Us</a></li>
+                        <li class="nav-item dropdown">
+                          <a class="nav-link" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-user"></i>
+                          </a>
+                          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                              <li><a class="dropdown-item" href="{% url "profiles" %}">Profile</a></li>
+                              <li><a class="dropdown-item" href="{% url "settings" %}">Setting</a></li>
+                              <li><a class="dropdown-item" href="{% url "messages" %}">Message</a></li>
+                              <li><hr class="dropdown-divider"></li>
+                              <li><a class="dropdown-item" href="href="{% url 'logout' %}"">Logout</a></li>
+                          </ul>
+                        </li>
+                    </ul>
+                    <ul class="navbar-nav flex-row mb-2 mb-lg-0 ms-lg-3">
+                        <li class="nav-item me-2">
+                            <a href="{% url 'signup' %}"><button class="px-3"> <span>Sign Up</span></button></a>
+                        </li>
+                        <li class="nav-item" >
+                            <a href="{% url 'login' %}"><button class="px-3"> <span>Log In</span></button></a>
+                        </li>
+                    </ul>
+                </div> {% endcomment %}
+
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from signUp.models import CustomUser, CandidateProfile, RecruiterProfile
+
+@login_required
+def profiles_View(request):
+    if request.user.is_authenticated:
+        user = request.user
+        context = {'user': user}
+
+        if user.role == CustomUser.CANDIDATE:
+            try:
+                candidate_profile = CandidateProfile.objects.get(user=user)
+                context['profile'] = candidate_profile
+                context['role'] = 'candidate'
+                print(context)
+            except CandidateProfile.DoesNotExist:
+                context['error_message'] = 'No CandidateProfile found for your account.'
+                
+        elif user.role == CustomUser.RECRUITER:
+            try:
+                recruiter_profile = RecruiterProfile.objects.get(user=user)
+                context['profile'] = recruiter_profile
+                context['role'] = 'recruiter'
+                print(context)
+            except RecruiterProfile.DoesNotExist:
+                context['error_message'] = 'No RecruiterProfile found for your account.'
+        else:
+            context['error_message'] = 'Invalid user role.'
+
+        return render(request, 'profiles/profiles.html', context)
+    else:
+        return redirect('login')
+
+
+from django.shortcuts import render, redirect
+from .forms import ProjectExperienceForm
+
+def add_project(request):
+    try:
+        project_user = get_object_or_404(ProjectExperience, user=request.user)
+    except UserProfile.DoesNotExist:
+        project_user = ProjectExperience(user=request.user)
+    if request.method == 'POST':
+        P_form = ProjectExperienceForm(request.POST ,instance=project_user)
+        if P_form.is_valid():
+            # Save the form data to the database
+            P_form.save()
+            # Redirect to a success page or display a success message
+            messages.success(request, 'Profile updated successfully.')
+            return redirect('profiles')  # Replace 'profile' with the name of the URL pattern for the profile page
+        else:
+            messages.error(request, 'Error updating profile. Please check the form and try again.')
+            # Redirect to the profile page after successful form submission
+    else:
+        form = ProjectExperienceForm()
+    return render(request, 'profiles/project_experience.html', {'form': form})
+
+
+@login_required
+def settings_View(request):
+    user_profile = get_object_or_404(UserProfile, user=request.user)
+    user = request.user
+
+    if user.role == CustomUser.RECRUITER:
+        profile = get_object_or_404(RecruiterProfile, user=user)
+    else:
+        profile = get_object_or_404(CandidateProfile, user=user)
+
+    user_profile_form = UserProfileForm(instance=user_profile)
+    project_experience_form = ProjectExperienceForm()
+    
+    context = {
+        'user_profile_form': user_profile_form,
+        'project_experience_form': project_experience_form,
+        'user_profile': user_profile,
+        'custom_user': user,
+        'profile': profile,
+    }
+    
+    return render(request, 'profiles/settings.html', context)
+
+
+@login_required
+def update_personal_info(request):
+    if request.method == 'POST':
+        user = request.user
+        user_profile_form = UserProfileForm(request.POST, instance=user.userprofile)
+        if user_profile_form.is_valid():
+            user_profile_form.save()
+            # Update additional fields based on user role
+            if user.role == CustomUser.RECRUITER:
+                recruiter_profile = get_object_or_404(RecruiterProfile, user=user)
+                recruiter_profile.company = request.POST.get('company')
+                recruiter_profile.save()
+            else:
+                candidate_profile = get_object_or_404(CandidateProfile, user=user)
+                # Additional fields for candidate profile can be updated here if needed
+
+            messages.success(request, 'Your personal information has been updated successfully.')
+            return redirect('settings')
+        else:
+            messages.error(request, 'Form validation error. Please check the entered data.')
+            # Optionally, you can pass the form errors to the template for display
+            return render(request, 'profiles/settings.html', {'user_profile_form': user_profile_form})
+    else:
+        messages.error(request, 'Invalid request method.')
+        return redirect('settings')
+
+
+@login_required
+def settings_View(request):
+    if request.user.is_authenticated:
+        user = request.user
+        if user.role == CustomUser.RECRUITER:
+            profile = get_object_or_404(RecruiterProfile, user=user)
+        else:
+            profile = get_object_or_404(CandidateProfile, user=user)
+
+    return render(request, 'profiles/settings.html')    
+
+
+    {% comment %} <!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1" role="dialog" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="changePasswordModalLabel">Change Password</h5>
+        <button type="button" class=" px-3" data-dismiss="modal" aria-label="Close">
+          <span><i class="fa-solid fa-xmark"></i></span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="changePasswordForm" method="post" action="{% url "change_password" %}">
+          {% csrf_token %}
+          <div class="form-group">
+            <label for="currentPassword">Current Password</label>
+            <input type="password" class="form-control" id="currentPassword" name="current_password" placeholder="Enter current password" required>
+          </div>
+          <div class="form-group">
+            <label for="newPassword">New Password</label>
+            <input type="password" class="form-control" id="newPassword" name="new_password" placeholder="Enter new password" required>
+            <small id="passwordHelpBlock" class="form-text text-muted">
+              Your password must be 8-20 characters long, contain letters and numbers, and must not contain spaces, special characters, or emoji.
+            </small>
+          </div>
+          <div class="form-group">
+            <label for="confirmPassword">Confirm New Password</label>
+            <input type="password" class="form-control" id="confirmPassword" name="confirm_password" placeholder="Confirm new password" required>
+            <div class="invalid-feedback">
+              Passwords do not match.
+            </div>
+          </div>
+          <button type="submit" class="px-3"><span>Change Password</span></button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div> {% endcomment %}
+
+
+
+
+
+@login_required
+def settings_View(request):
+    user_profile = get_object_or_404(UserProfile, user=request.user)
+
+    if request.method == 'POST':
+        if 'save_changes' in request.POST:
+            form = EditUserForm(request.POST, instance=user_profile)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Settings updated successfully.')
+                return redirect('settings')
+            else:
+                messages.error(request, 'Error updating settings. Please check the form and try again.')
+        elif 'change_password' in request.POST:
+            change_passform = CustomPasswordChangeForm(request.user, request.POST)
+            if change_passform.is_valid():
+                user = change_passform.save()
+                update_session_auth_hash(request, user)  # Important for keeping the user logged in after password change
+                messages.success(request, 'Your password has been changed successfully!')
+                return redirect('settings')
+            else:
+                messages.error(request, 'Please correct the error below.')
+    else:
+        form = EditUserForm(instance=user_profile)
+        change_passform = CustomPasswordChangeForm(request.user)
+
+    profile = None
+    if request.user.role == CustomUser.RECRUITER:
+        profile = get_object_or_404(RecruiterProfile, user=request.user)
+    elif request.user.role == CustomUser.CANDIDATE:
+        profile = get_object_or_404(CandidateProfile, user=request.user)
+
+    context = {
+        'custom_user': request.user,
+        'form': form,
+        'profile': profile,
+        'change_passform': change_passform,
+    }
+
+    return render(request, 'profiles/settings.html', context)
+
+    {% extends "main/Layout.html" %}
+
+{% load static %}
+
+{% block title %}
+Post Detailes
+{% endblock %}
+
+{% block head_css %}
+<link rel="stylesheet" href="{% static 'css/button.css' %}">
+<link rel="stylesheet" href="{% static 'css/services.css' %}">
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+{% endblock %}
+
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/postdetail.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="ezy__blogdetails1 light" id="ezy__blogdetails1">
+    <div class="container">
+      <div class="row">
+        <div class="col-12 col-md-8">
+          <h1 class="ezy__blogdetails1-heading mb-5">How to Pitch a Video Game: 7 Tips for Pitching Games</h1>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-12 col-md-8">
+          <img src="https://images.pexels.com/photos/1667088/pexels-photo-1667088.jpeg" alt="" class="img-fluid rounded" />
+          <div class="d-flex justify-content-between my-5 me-5 flex-column">
+            <h2 class="mb-4 fw-bolder">Student Management Project by Using Python and Django</h2>
+            <div class="d-flex align-items-center mb-2">
+              <div class="me-2">
+                <img src="https://cdn.easyfrontend.com/pictures/testimonial/testimonial_square_1.jpeg" alt=""
+                  class="img-fluid rounded-circle border" width="47" />
+              </div>
+              <div>
+                <p class="mb-0">By <b>Surya Prasad Sahoo</b></p>
+              </div>
+              <p class="mb-0 ms-3">August 10th, 2020</p>
+            </div>
+            <div class="ezy__blogdetails1-social d-flex justify-content-between">
+              <div class="star-rating ezy__footer13-quick-links">
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star-half-alt"></i>
+              </div>
+              <ul class="ezy__footer13-quick-links">
+                <a href=""><i class="fab fa-facebook me-3"></i></a>
+                <a href=""><i class="fab fa-instagram me-3"></i></a>
+                <a href=""><i class="fab fa-linkedin-in me-3"></i></a>
+                <a href=""><i class="fab fa-twitter me-3"></i></a>
+                <a href=""><i class="fab fa-whatsapp me-3"></i></a>
+                <a href=""><i class="fas fa-share-alt me-3"></i></a>
+                <a href=""><i class="fas fa-bookmark"></i></a>
+              </ul>
+            </div>
+          </div>
+          <div class="ezy__blogdetails1-content">
+            <p>
+              Teaching is a noble profession. Think about the most respected persons in our society. Yes, they are the
+              teachers. If you ask someone about some of his favourite persons, it is most likely to find a teacher of
+              him in his answer. So, being a teacher is an amazing thing. Besides, the career prospect in teaching is
+              also lucrative. In England and Wales, as a Newly Qualified Teacher (NQT) you’ll earn £24,373 to £30,480
+              depending on location Since you have decided to become a teacher, you may be known to all of these.
+            </p>
+            <p>
+              Getting into teaching requires many years of preparation. If you don’t know how to become a teacher, you
+              may find the way challenging. So, in this article, I’ll walk you through the steps to becoming a teacher
+              in the UK.
+            </p>
+  
+            <br />
+            <h5>2. Decide your preferred subject</h5>
+            <p>
+              In primary schools, you may be responsible for teaching multiple subjects. But in the secondary schools,
+              it’s most likely that you’ll be teaching the subject in which you did your major. So, it’s your choice
+              which subject do you want to teach. It’s necessary to decide this because it will keep you on the track to
+              become a teacher and step forward to make your preparation.
+            </p>
+  
+            <br />
+            <h5>3. Earn your bachelor degree</h5>
+            <p>
+              Unlike many other professions, teaching is very strict in its requirements. It’s because we don’t want to
+              give the responsibility of educating our children to someone who doesn’t have the proper education and
+              credentials. So, getting into teaching requires a minimum degree in the first place. After that, the other
+              things come. You need a bachelor degree to become a teacher. There are also other specialized and advanced
+              degrees, but you need your bachelor degree before everything.
+            </p>
+            <p>
+              If you want to be a primary teacher, then you’ll need a degree of Bachelor of Education (BEd.) But, if you
+              want to be a secondary teacher, you have to do your bachelor in your preferred subject. Your major in your
+              degree will determine which subject you’ll be teaching. Earning a bachelor degree will require 3 to 4
+              years. However, if you want to be a nursery or pre-school teacher, you don’t need a bachelor degree rather
+              a proper license and certification in teaching children.
+            </p>
+          </div>
+        </div>
+        <div class="col-12 col-md-4 col-lg-3">
+          <!-- Payment section -->
+          <div class="ezy__blogdetails1-top py-4 px-3 mb-4">
+            <h5 class="mb-0">Go with this cadidate</h5>
+          </div>
+          <div class="tab-content" id="packageTabsContent">
+            <div class="tab-pane fade show active" id="basic" role="tabpanel" aria-labelledby="basic-tab">
+              <div class="price_card">
+                <h5 class="price_card-title">I WILL EDIT REAL ESTATE 5 PHOTOS</h5>
+                <p>Lens Correction, White Balance, Sky replacement, Repair Straight, vertical Horizontal</p>
+                <ul class="features">
+                    <li><i class="fas fa-clock"></i> 1-day delivery</li>
+                    <li><i class="fas fa-sync"></i> Unlimited Revisions</li>
+                    <li><i class="fas fa-images"></i> 5 images</li>
+                    <li><i class="fas fa-file-image"></i> Printable resolution file</li>
+                </ul>
+                <p class="price">Price: <span>₹4056</span></p>
+                <button class="px-3"><span>Continue</span></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+</section>    
+
+<section class="ezy__blog3 light">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8 text-center">
+        <h2 class="ezy__blog3-heading mb-3 mt-0">View More Posts</h2>
+      </div>
+    </div>
+    <div class="row mt-5">
+      <div class="col-12 col-md-6 col-lg-4 mb-3">
+        <article class="ezy__blog3-post h-100">
+          <div class="position-relative">
+            <img src="https://cdn.easyfrontend.com/pictures/blog/blog_3.jpg" alt="" class="img-fluid w-100" />
+          </div>
+          <div class="p-3 p-md-4">
+              <div class="avatar">
+                  <img class="post_avatar" src="{% static 'assets/alchemyrefiner_alchemymagic_2_78ad3111-a1a3-4ce8-8f9b-ff5c9b293956_0.jpg' %}" alt="avatar" width="80" height="80">
+                  <span class="fw-bold m-2">Surya </span>
+              </div>                    
+            <h4 class="mt-3 ezy__blog3-title fs-4">Not Your Regular Home Decoration?</h4>
+            <p class="ezy__blog3-description mt-3 mb-4">
+              Urna molestie at eleme ntum eu facilisis sed odio Male suada fames.
+            </p>
+            <a href=""><button class="px-3"><span>Read More</span></button></a>
+          </div>
+        </article>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4 mb-3">
+        <article class="ezy__blog3-post h-100">
+          <div class="position-relative">
+            <img src="https://cdn.easyfrontend.com/pictures/blog/blog_9.jpg" alt="" class="img-fluid w-100" />
+          </div>
+          <div class="p-3 p-md-4">
+              <div class="avatar">
+                  <img class="post_avatar" src="{% static 'assets/alchemyrefiner_alchemymagic_2_78ad3111-a1a3-4ce8-8f9b-ff5c9b293956_0.jpg' %}" alt="avatar" width="80" height="80">
+                  <span class="fw-bold m-2">Surya </span>
+              </div>                    
+            <h4 class="mt-3 ezy__blog3-title fs-4">How I’m Styling Everyday Black Outfits</h4>
+            <p class="ezy__blog3-description mt-3 mb-4">
+              t’s no secret that the digital industry is booming. From exciting startups to global brands.
+            </p>
+            <a href=""><button class="px-3"><span>Read More</span></button></a>
+            
+          </div>
+        </article>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4 mb-3">
+        <article class="ezy__blog3-post h-100">
+          <div class="position-relative">
+            <img src="https://cdn.easyfrontend.com/pictures/blog/blog_14_1.jpg" alt="" class="img-fluid w-100" />
+          </div>
+          <div class="p-3 p-md-4">
+              <div class="avatar">
+                  <img class="post_avatar" src="{% static 'assets/alchemyrefiner_alchemymagic_2_78ad3111-a1a3-4ce8-8f9b-ff5c9b293956_0.jpg' %}" alt="avatar" width="80" height="80">
+                  <span class="fw-bold m-2">Surya Prasad Sahoo</span>
+              </div>
+            <h4 class="mt-3 ezy__blog3-title fs-4">Fashion Essentials All Men Should Know</h4>
+            <p class="ezy__blog3-description mt-3 mb-4">
+              More off this less hello salamander lied porpoise much over tightly circa horse taped.
+            </p>
+            <a href=""><button class="px-3"><span>Read More</span></button></a>
+          </div>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+from django.forms import ValidationError
+from django.shortcuts import get_object_or_404, render, redirect
+from .forms import BlogPostForm
+from .models import BlogPost
+from profiles.models import UserProfile
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+
+# Create your views here.
+@login_required
+def studentPost(request):
+    posts = BlogPost.objects.filter(user=request.user)
+    user_profile = UserProfile.objects.get(user=request.user)
+    print(user_profile)
+    profile_image_url = user_profile.profile_image.url if user_profile.profile_image else None
+    return render(request, 'studentPost/studentPost.html', {'posts': posts ,'user_profile': user_profile ,'profile_image_url': profile_image_url })
+
+@login_required
+
+def postDetail(request, post_id):
+    post = get_object_or_404(BlogPost, id=post_id)
+    related_posts = BlogPost.objects.filter(user=post.user).exclude(id=post.id)[:3]  # Fetch related posts by the same user, excluding the current post
+    user_profile = UserProfile.objects.get(user=request.user)
+    profile_image_url = user_profile.profile_image.url if user_profile.profile_image else None
+    return render(request, 'studentPost/postdetailes.html', {'post': post, 'user_profile': user_profile , 'related_posts': related_posts ,'profile_image_url': profile_image_url})
+
+
+@login_required
+def create_blog_post(request):
+    if request.method == 'POST':
+        form = BlogPostForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                blog_post = form.save(commit=False)
+                blog_post.user = request.user  # Assign the current user
+                blog_image = request.FILES.get('blog_image')
+                if blog_image:
+                    # Print debug information
+                    print(f'Uploaded image name: {blog_image.name}')
+                    print(f'Uploaded image size: {blog_image.size}')
+                    max_filename_length = 1000
+                    if len(blog_image.name) > max_filename_length:
+                        blog_image.name = blog_image.name[:max_filename_length]
+                    blog_post.blog_image = blog_image  # Save the image
+                blog_post.save()
+                messages.success(request, 'Blog post created successfully.')
+                print('Blog post created successfully.')
+                return redirect('studentpost')  # Redirect to a success page or the list of posts
+            except ValidationError as e:
+                error_messages = e.message_dict
+                print(f'Validation errors: {error_messages}')
+                form = BlogPostForm()
+                return render(request, 'studentPost/post_creation_form.html', {'form': form, 'error_messages': error_messages})
+            except Exception as e:
+                messages.error(request, f'Error while creating the post: {e}')
+                print(f'Error while creating the post: {e}')
+        else:
+            messages.error(request, 'Form is not valid. Please check the fields.')
+            print('Form is not valid. Please check the fields.')
+    else:
+        form = BlogPostForm()
+    return render(request, 'studentPost/post_creation_form.html', {'form': form})
+
+
+
+{% extends "main/Layout.html" %}
+
+{% load static %}
+
+{% block title %}
+Post Details
+{% endblock %}
+
+{% block head_css %}
+<link rel="stylesheet" href="{% static 'css/button.css' %}">
+<link rel="stylesheet" href="{% static 'css/services.css' %}">
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/studentpost.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="ezy__blog7 light">
+    <div class="container-fluid d-flex justify-content-center" style="max-height: 500px;">
+      <img src="https://images.pexels.com/photos/4065876/pexels-photo-4065876.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" alt="" class="w-100" style="object-fit: cover;" />
+    </div>
+
+    <div class="ezy__blog7-wrapper">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-12 text-lg-center">
+            <h2 class="ezy__blog7-heading mb-3 mt-0">Let's Now make an impression.</h2>
+            <p class="ezy__blog7-sub-heading mb-4">
+              "Create stunning blog posts effortlessly. Share your insights, engage with readers, and build your online presence globally."
+            </p>
+            <a href="{% url 'create_blog_post' %}"><button class="px-3"><span>Create Post</span></button></a>
+          </div>
+        </div>
+
+        <div class="row mt-5">
+          {% for post in posts %}
+          <div class="col-12 col-md-6 col-lg-4 mb-3">
+            <article class="ezy__blog7-post">
+              <div class="position-relative">
+                {% if post.blog_image %}
+                <img
+                  src="{{ post.blog_image.url }}"
+                  alt="Blog image"
+                  class="img-fluid w-100 ezy-blog7-banner"
+                />
+                {% else %}
+                <!-- Use a sample image -->
+                <img
+                  src="{% static 'assets/el-logo-de-automatia-la-innovadora-startup-especia-gkjFy6O-S_2MhMyJ9i_btQ-61EwEfxyRYiLIEA3QthxDg.jpeg' %}"
+                  alt="Sample Image"
+                  class="img-fluid w-100 ezy-blog7-banner"
+                />
+                {% endif %}
+                <div class="px-4 py-3 ezy__blog7-calendar">{{ post.publication_date|date:"d M Y" }}</div>
+              </div>
+              <div class="p-3 p-md-4">
+                <h4 class="mt-3 ezy__blog7-title fs-4 mb-4">{{ post.title }}</h4>
+                <div class="avatar">
+                  {% if user_profile.profile_image %}
+                  <img class="post_avatar" src="{{ user_profile.profile_image.url }}" alt="avatar" width="80" height="80">
+                  {% else %}
+                  <img class="post_avatar" src="{% static 'assets/candidate2.jpg' %}" alt="avatar" width="80" height="80">
+                  {% endif %}
+                  <span class="fw-bold m-2">{{ related_post.user.first_name }} {{ related_post.user.last_name }}</span>
+                </div>
+                <p class="ezy__blog7-description mt-3 mb-4">
+                  {{ post.content|truncatewords:20 }}
+                </p>
+                <a href="{% url 'postdetail' post.id %}"><button class="px-3"><span>Read More</span></button></a>
+              </div>
+            </article>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+</section>
+{% endblock %}
+
+
+# from django.shortcuts import render
+# from studentPost.models import BlogPost
+# from profiles.models import UserProfile
+
+# # Create your views here.
+# def services_View(request):
+#     posts = BlogPost.objects.all()
+#     user_profile = UserProfile.objects.get(user=request.user)
+#     print(user_profile)
+#     profile_image_url = user_profile.profile_image.url if user_profile.profile_image else None
+#     print(profile_image_url)
+#     return render(request, 'services/services.html', {'posts': posts ,'user_profile': user_profile ,'profile_image_url': profile_image_url })
+
+# from django.shortcuts import render
+# from studentPost.models import BlogPost
+
+# def services_View(request):
+#     posts = BlogPost.objects.all()
+#     profile_image_url = None  # Initialize profile_image_url to None for unauthenticated users
+#     return render(request, 'services/services.html', {'posts': posts, 'profile_image_url': profile_image_url})
+
+
+    {% comment %} testimonial section  {% endcomment %}
+    <section class="ezy__testimonial5 light" id="Talents">
+        <div class="container">
+            <div class="row justify-content-center mb-4 mb-md-5">
+                <div class="col-lg-6 col-xl-5 text-center">
+                    <h2 class="ezy__testimonial5-heading mb-3">Meet Our Talents</h2>
+                    <p class="ezy__testimonial5-sub-heading mb-0">
+                        From there give dominion, lights doesn't good all rule let open, appear our beast second bearing.
+                    </p>
+                </div>
+            </div>
+            <div class="row">
+                {% for user in users %}
+                    {% if user.role == 'candidate' %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="ezy__testimonial5-item p-4 py-lg-5 mt-4">
+                                {% if user.candidate_profile.profile_image %}
+                                    <img class="post_avatar" src="{{ user.candidate_profile.profile_image.url }}" alt="avatar" width="80" height="80">
+                                {% else %}
+                                    <img class="post_avatar" src="{% static 'assets/candidate2.jpg' %}" alt="avatar" width="80" height="80">
+                                {% endif %}
+                                <div class="ezy__testimonial5-content mt-3">
+                                    <h4 class="mb-1">{{ user.first_name }} {{ user.last_name }}</h4>
+                                    <p class="mb-4 ezy__testimonial5-rating">
+                                        <span class="fas fa-star active"></span>
+                                        <span class="fas fa-star active"></span>
+                                        <span class="fas fa-star active"></span>
+                                        <span class="fas fa-star-half-alt active"></span>
+                                        <span class="fas fa-star"></span>
+                                    </p>
+                                    <p class="opacity-50 mb-0">
+                                        It’s easier to reach your savings goals when you have the right savings account. Take a look and find
+                                        the right one for you.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% comment %} testimonial section end {% endcomment %}
+
+
+
+        {% comment %} testimonial section  {% endcomment %}
+    <section class="ezy__testimonial5 light" id="Talents">
+        <div class="container">
+          <div class="row justify-content-center mb-4 mb-md-5">
+            <div class="col-lg-6 col-xl-5 text-center">
+              <h2 class="ezy__testimonial5-heading mb-3">Meet Our Talents</h2>
+              <p class="ezy__testimonial5-sub-heading mb-0">
+                From there give dominion, lights doesn't good all rule let open, appear our beast second bearing. 
+              </p>
+            </div>
+          </div>
+          <div class="d-flex">
+              {% for user in users  %}
+                <div class="ezy__testimonial5-item p-4 py-lg-5 mt-4">
+                  {% if user.userprofile.profile_image %}
+                  <img class="post_avatar" src="{{ user.userprofile.profile_image.url }}" alt="avatar" width="80" height="80">
+                  {% else %}
+                  <img class="post_avatar" src="{% static 'assets/candidate2.jpg' %}" alt="avatar" width="80" height="80">
+                  {% endif %}
+                  <div class="ezy__testimonial5-content mt-3">
+                    <h4 class="mb-1">{{ user.first_name }} {{ user.last_name }}</h4>
+                    <p class="mb-4 ezy__testimonial5-rating">
+                      <span class="fas fa-star active"></span>
+                      <span class="fas fa-star active"></span>
+                      <span class="fas fa-star active"></span>
+                      <span class="fas fa-star-half-alt active"></span>
+                      <span class="fas fa-star"></span>
+                    </p>
+                    <p class="opacity-50 mb-0">
+                      It’s easier to reach your savings goals when you have the right savings account. Take a look and find
+                      the right one for you.
+                    </p>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+          </div>
+        </div>
+    </section>
+    {% comment %} testimonial section end {% endcomment %}
+
+
+                <div class="row">
+                    {% for candidate in candidates %}
+                        <div class="card ezy__service23-card border-0 rounded-0 col-md-6 col-lg-4">
+                            <div class="ezy__testimonial5-item p-4 py-lg-5 mt-4 text-center">
+                                {% if user.userprofile.profile_image %}
+                                    <img class="post_avatar" src="{{ candidate.profile_image.url }}" alt="{{ candidate.user.username }}">
+                                {% else %}
+                                    <img class="post_avatar" src="{% static 'assets/candidate2.jpg' %}" alt="avatar">
+                                {% endif %}
+                                <div class="ezy__testimonial5-content mt-3">
+                                    <h4 class="mb-1">{{ candidate.user.first_name }} {{ candidate.user.last_name }}</h4>
+                                    <p class="mb-4 ezy__testimonial5-rating">
+                                        {{ candidate.skills }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>    
+
+
+
+
+{% extends "main/Layout.html" %}
+
+{% load static %}
+
+{% block title %}
+talents
+{% endblock %}
+
+{% block content %}
+<body>
+    <section class="specified_skills light">
+        <div class="container my-3">
+            <div class="text-center mb-4">
+                <h2 class="section-heading">Specialized design and creative experts you can count on</h2>
+            </div>
+            <div class="row text-center mb-4 mt-md-5">
+                <div class="col-md-4 stat">
+                    <h3>⭐ 4.92</h3>
+                    <p>Average rating for work with design and creative talent.</p>
+                </div>
+                <div class="col-md-4 stat">
+                    <h3>184K+ contracts</h3>
+                    <p>Involving design and creative work in the past year.</p>
+                </div>
+                <div class="col-md-4 stat">
+                    <h3>468 skills</h3>
+                    <p>Represented by talent on Upwork.</p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12 col-sm-6 col-lg-3 mb-4 d-flex justify-content-center">
+                    <div class="card card-custom h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">UX/UI Designers</h5>
+                            <div class="rating">⭐ 4.8 average rating</div>
+                            <div class="profile-pics">
+                                <img src="{% static 'assets/alchemyrefiner_alchemymagic_2_e5784fc4-a8ed-4dfc-ba42-a091b7aa846a_0.jpg' %}" alt="Profile 1">
+                                <img src="{% static 'assets/alchemyrefiner_alchemymagic_2_e5784fc4-a8ed-4dfc-ba42-a091b7aa846a_0.jpg' %}" alt="Profile 2">
+                                <img src="{% static 'assets/alchemyrefiner_alchemymagic_2_e5784fc4-a8ed-4dfc-ba42-a091b7aa846a_0.jpg' %}" alt="Profile 3">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3 mb-4 d-flex justify-content-center">
+                    <div class="card card-custom h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">Motion Designers</h5>
+                            <div class="rating">⭐ 4.9 average rating</div>
+                            <div class="profile-pics">
+                                <img src="{% static 'assets/alchemyrefiner_alchemymagic_2_e5784fc4-a8ed-4dfc-ba42-a091b7aa846a_0.jpg' %}" alt="Profile 1">
+                                <img src="{% static 'assets/alchemyrefiner_alchemymagic_2_e5784fc4-a8ed-4dfc-ba42-a091b7aa846a_0.jpg' %}" alt="Profile 2">
+                                <img src="{% static 'assets/alchemyrefiner_alchemymagic_2_e5784fc4-a8ed-4dfc-ba42-a091b7aa846a_0.jpg' %}" alt="Profile 3">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3 mb-4 d-flex justify-content-center">
+                    <div class="card card-custom h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">Animators</h5>
+                            <div class="rating">⭐ 4.8 average rating</div>
+                            <div class="profile-pics">
+                                <img src="{% static 'assets/alchemyrefiner_alchemymagic_2_e5784fc4-a8ed-4dfc-ba42-a091b7aa846a_0.jpg' %}" alt="Profile 1">
+                                <img src="{% static 'assets/alchemyrefiner_alchemymagic_2_e5784fc4-a8ed-4dfc-ba42-a091b7aa846a_0.jpg' %}" alt="Profile 2">
+                                <img src="{% static 'assets/alchemyrefiner_alchemymagic_2_e5784fc4-a8ed-4dfc-ba42-a091b7aa846a_0.jpg' %}" alt="Profile 3">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3 mb-4 d-flex justify-content-center">
+                    <div class="card card-custom h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">Voice Artists</h5>
+                            <div class="rating">⭐ 4.9 average rating</div>
+                            <div class="profile-pics">
+                                <img src="{% static 'assets/alchemyrefiner_alchemymagic_2_e5784fc4-a8ed-4dfc-ba42-a091b7aa846a_0.jpg' %}" alt="Profile 1">
+                                <img src="{% static 'assets/alchemyrefiner_alchemymagic_2_e5784fc4-a8ed-4dfc-ba42-a091b7aa846a_0.jpg' %}" alt="Profile 2">
+                                <img src="{% static 'assets/alchemyrefiner_alchemymagic_2_78ad3111-a1a3-4ce8-8f9b-ff5c9b293956_0.jpg' %}" alt="Profile 3">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center see-more-btn mt-md-5 mt-sm-2">
+                <button class="px-3"><span>See more skills</span></button>
+            </div>        
+        </div>
+    </section>
+    <section>
+        <div class="container my-5 mt-lg-1">
+            <div class="mb-5 mb-md-5">
+                <h2 class="section-heading">Other Skills</h2>
+            </div>
+            <div id="skillsCarousel" class="carousel slide" data-ride="carousel">
+                <div class="carousel-inner">
+                    <div class="carousel-item active">
+                        <div class="row">
+                            <div class="col-md-4 mb-4 d-flex justify-content-center ">
+                                <div class="card card-custom h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Skill 1</h5>
+                                        <div class="rating">⭐ 4.5 average rating</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-4 d-flex justify-content-center ">
+                                <div class="card card-custom h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Skill 2</h5>
+                                        <div class="rating">⭐ 4.6 average rating</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-4 d-flex justify-content-center ">
+                                <div class="card card-custom h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Skill 3</h5>
+                                        <div class="rating">⭐ 4.7 average rating</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="carousel-item">
+                        <div class="row">
+                            <div class="col-md-4 mb-4 d-flex justify-content-center">
+                                <div class="card card-custom h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Skill 4</h5>
+                                        <div class="rating">⭐ 4.5 average rating</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-4 d-flex justify-content-center">
+                                <div class="card card-custom h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Skill 5</h5>
+                                        <div class="rating">⭐ 4.6 average rating</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-4 d-flex justify-content-center">
+                                <div class="card card-custom h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Skill 6</h5>
+                                        <div class="rating">⭐ 4.7 average rating</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="carousel-item">
+                        <div class="row">
+                            <div class="col-md-4 mb-4 d-flex justify-content-center">
+                                <div class="card card-custom h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Skill 7</h5>
+                                        <div class="rating">⭐ 4.5 average rating</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-4 d-flex justify-content-center">
+                                <div class="card card-custom h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Skill 8</h5>
+                                        <div class="rating">⭐ 4.6 average rating</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-4 d-flex justify-content-center">
+                                <div class="card card-custom h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Skill 9</h5>
+                                        <div class="rating">⭐ 4.7 average rating</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <a class="carousel-control-prev" href="#skillsCarousel" role="button" data-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="sr-only">Previous</span>
+                    <span><i class="fa-solid fa-angle-right"></i></span>
+                </a>
+                <a class="carousel-control-next" href="#skillsCarousel" role="button" data-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="sr-only">Next</span>
+                    <span><i class="fa-solid fa-angle-right"></i></span>
+                </a>
+            </div>            
+        </div>
+    </section>
+{% endblock %}
+
+
+    <!-- hero section start -->
+    <header class="ezy__header41">
+        <!-- shape one -->
+        <svg
+          class="position-absolute bottom-0 start-0"
+          width="335"
+          height="186"
+          viewBox="0 0 335 186"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M327.624 186C331.697 186 335 182.795 335 178.843C335 174.889 331.697 171.686 327.624 171.686L327.624 186ZM99.0264 108.432C99.0264 104.479 95.725 101.274 91.6506 101.274C87.5777 101.274 84.2748 104.479 84.2748 108.432L99.0264 108.432ZM14.7516 7.15719C14.7516 3.20498 11.4488 -1.41429e-05 7.37582 -1.43209e-05C3.30142 -1.4499e-05 -1.40095e-07 3.20498 -3.12851e-07 7.15719L14.7516 7.15719ZM70.8301 92.441C74.9031 92.441 78.206 89.2374 78.206 85.2838C78.206 81.3316 74.9031 78.1266 70.8301 78.1266L70.8301 92.441ZM327.624 171.686L237.363 171.686L237.363 186L327.624 186L327.624 171.686ZM237.363 171.686C227.292 171.686 219.034 163.687 219.034 153.695L204.283 153.695C204.283 171.481 219.031 186 237.363 186L237.363 171.686ZM219.034 153.695C219.034 135.907 204.272 121.392 185.942 121.392L185.942 135.706C196.019 135.706 204.283 143.708 204.283 153.695L219.034 153.695ZM185.942 121.392L180.609 121.392L180.609 135.706L185.942 135.706L185.942 121.392ZM180.609 121.392C162.28 121.392 147.517 135.907 147.517 153.695L162.268 153.695C162.268 143.708 170.534 135.706 180.609 135.706L180.609 121.392ZM147.517 153.695C147.517 163.684 139.253 171.686 129.177 171.686L129.177 186C147.506 186 162.268 171.485 162.268 153.695L147.517 153.695ZM129.177 171.686L123.272 171.686L123.272 186L129.177 186L129.177 171.686ZM123.272 171.686C109.935 171.686 99.0264 161.097 99.0264 147.921L84.2748 147.921C84.2748 168.9 101.682 186 123.272 186L123.272 171.686ZM99.0264 147.921L99.0264 131.902L84.2748 131.902L84.2748 147.921L99.0264 147.921ZM99.0264 131.902L99.0264 108.432L84.2748 108.432L84.2748 131.902L99.0264 131.902ZM-3.12851e-07 7.15719L-1.0331e-06 23.6345L14.7516 23.6345L14.7516 7.15719L-3.12851e-07 7.15719ZM-1.0331e-06 23.6345C-2.69384e-06 61.6278 31.7028 92.441 70.8301 92.441L70.8301 78.1266C39.8664 78.1266 14.7516 53.7377 14.7516 23.6345L-1.0331e-06 23.6345Z"
+            fill="#4175DF"
+            fill-opacity="0.17"
+          />
+        </svg>
+      
+        <!-- shape two -->
+        <svg
+          class="position-absolute bottom-0 end-0"
+          width="102"
+          height="102"
+          viewBox="0 0 102 102"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M50.9999 102C79.1665 102 102 79.1665 102 51C102 22.8335 79.1665 0 50.9999 0C22.8334 0 0 22.8335 0 51C0 79.1665 22.8334 102 50.9999 102Z"
+            fill="#FF9100"
+            fill-opacity="0.19"
+          />
+        </svg>
+      
+        <div class="container">
+          <div class="row align-items-center">
+            <div class="col-12 col-md-9 col-lg-7 text-center text-lg-start mb-5 mb-lg-0">
+              <div class="position-relative mb-3 pb-4">
+                <div class="ezy__header41-bg-holder"></div>
+                <h2 class="ezy__header41-heading">Hire the  Expert For <span class="text-primary fst-italic">Future</span></h2>
+              </div>
+              <div class="row">
+                <div class="col-12 col-lg-8">
+                  <p class="ezy__header41-sub-heading mb-5">
+                    An activity that requires a person's mental or physical effort is work.If a person is trained for a
+                    certain type of job, they may have a job or profession which suits.
+                  </p>
+                </div>
+              </div>
+              <div class="row">
+                <div class="input-group"> 
+                    <input required="" type="text" name="text" autocomplete="off" class="input rounded-pill" style="width: 50%;">
+                    <label class="user-label" style="left: 36px;">Find Talent</label>
+                    <button class="rounded-pill px-3 mx-3"><span>Search</span></button>
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-lg-5 position-relative text-center">
+              <div class="ezy__header41-shape"></div>
+              <!-- shape three -->
+              <svg
+                class="ezy__header41-shape-three position-absolute bottom-0"
+                width="291"
+                height="168"
+                viewBox="0 0 291 168"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M80.926 5.72087C38.4338 6.50518 4.64517 42.1258 5.44169 85.2796C6.23821 128.433 41.3183 162.781 83.8105 161.997L285.424 158.275"
+                  stroke="#34C69F"
+                  stroke-width="10"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+      
+              <div>
+                <img src="{% static 'assets/character.png' %}" alt="" class="img-fluid" style="height: 100vh;"/>
+              </div>
+            </div>
+          </div>
+        </div>
+    </header>
+    <!-- hero section end -->
+
+
+    <div class="message-modal" id="message-modal">
+        <div class="message-modal-header">
+            <div class="message_profile-header">
+                {% if candidate.profile_image %}
+                    <img src="{{ candidate.profile_image.url }}" alt="{{ candidate.user.username }}">
+                {% else %}
+                    <img src="{% static 'assets/candidate2.jpg' %}" alt="avatar">
+                {% endif %}
+            </div>
+            <h5>Message {{ candidate.user.first_name }}</h5>
+            <button class="px-3" id="close-modal"><span><i class="fa-solid fa-x"></i></span></button>
+        </div>
+        <div class="message-modal-body">
+            <div class="predefined-messages">
+                <button onclick="insertMessage('Hello {{ candidate.user.first_name }}, I have a project that I would like to discuss with you.')"><span>Hello {{ candidate.user.first_name }}, I have a project that I would like to discuss with you.</span></button>
+                <button onclick="insertMessage('Can you help me with my project requirements?')"><span>Can you help me with my project requirements?</span></button>
+                <button onclick="insertMessage('Would it be possible to get a custom offer for my project?')"><span>Would it be possible to get a custom offer for my project?</span></button>
+                <button onclick="insertMessage('Do you think you can deliver an order by the specified deadline?')"><span>Do you think you can deliver an order by the specified deadline?</span></button>
+            </div>
+            <textarea id="message-textarea" class="form-control" rows="4" placeholder="Type your message...">Hello {{ candidate.user.first_name }}, I would like to discuss a potential opportunity with you.</textarea>
+        </div>
+        <div class="message-modal-footer">
+            <button class="px-3" id="cancel-button"><span>Cancel</span></button>
+            <button class="px-3"><span>Send</span></button>
+        </div>
+    </div>    
+
+
+
+
+
+
+@login_required
+def get_messages(request, chat_session_id):
+    chat_session = get_object_or_404(ChatSession, id=chat_session_id)
+    messages = chat_session.messages.all().order_by('timestamp')
+    
+    return JsonResponse({
+        'messages': [{
+            'sender': message.sender.username,
+            'receiver': message.receiver.username,
+            'content': message.content,
+            'timestamp': message.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+        } for message in messages]
+    })
+# message view
+def messages_View(request):
+    return render(request, 'profiles/messages.html')
+
+
+
+{% comment %} <!-- Modal for editing billing info -->
+<div id="billingInfoModal" class="modal">
+    <div class="modal-content">
+        <button class="close px-3"><span><i class="fa-solid fa-x"></i></span></button>
+        <h2>Edit Billing Information</h2>
+        <form id="billingInfoForm">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="full_name">Full Name</label>
+                <input type="text" id="full_name" name="full_name" value="{{ profile.full_name }}" required>
+            </div>
+            <div class="form-group">
+                <label for="company_name">Company Name</label>
+                <input type="text" id="company_name" name="company_name" value="{{ profile.company_name }}">
+            </div>
+            <div class="form-group">
+                <label for="country">Country</label>
+                <input type="text" id="country" name="country" value="{{ profile.country }}" required>
+            </div>
+            <div class="form-group">
+                <label for="state">State/Union Territory</label>
+                <input type="text" id="state" name="state" value="{{ profile.state }}" required>
+            </div>
+            <div class="form-group">
+                <label for="address">Address</label>
+                <input type="text" id="address" name="address" value="{{ profile.address }}" required>
+            </div>
+            <div class="form-group">
+                <label for="city">City</label>
+                <input type="text" id="city" name="city" value="{{ profile.city }}" required>
+            </div>
+            <div class="form-group">
+                <label for="postal_code">Postal Code</label>
+                <input type="text" id="postal_code" name="postal_code" value="{{ profile.postal_code }}" required>
+            </div>
+            <div class="form-group">
+                <label>Are you a citizen/resident of India?</label>
+                <div class="radio_button" style="background: none;">
+                    <div class="mx-2">
+                        <input type="radio" id="is_indian_citizen_yes" name="is_indian_citizen" value="yes" {% if profile.is_indian_citizen %}checked{% endif %}>
+                    </div>
+                    <label for="is_indian_citizen_yes">Yes</label>
+                </div>
+                <div class="radio_button" style="background: none;">
+                    <div class="mx-2">
+                        <input type="radio" id="is_indian_citizen_no" name="is_indian_citizen" value="no" {% if not profile.is_indian_citizen %}checked{% endif %}>
+                    </div>
+                    <label for="is_indian_citizen_no">No</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <input type="checkbox" id="receive_invoices_via_email" name="receive_invoices_via_email" {% if profile.receive_invoices_via_email %}checked{% endif %}>
+                <label for="receive_invoices_via_email">I want to get invoices via email as well.</label>
+            </div>
+            <button type="button" id="saveBillingInfo">Save</button>
+        </form>
+    </div>
+</div>
+<script>
+    // Get the modal
+    var modal = document.getElementById("billingInfoModal");
+
+    // Get the button that opens the modal
+    var btn = document.getElementById("editBillingInfo");
+
+    // Get the <span> element that closes the modal
+    var span = document.getElementsByClassName("close")[0];
+
+    // When the user clicks the button, open the modal 
+    btn.onclick = function() {
+        modal.style.display = "block";
+    }
+
+    // When the user clicks on <span> (x), close the modal
+    span.onclick = function() {
+        modal.style.display = "none";
+    }
+
+    // When the user clicks anywhere outside of the modal, close it
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+
+    document.getElementById('saveBillingInfo').addEventListener('click', function() {
+        var formData = new FormData(document.getElementById('billingInfoForm'));
+        fetch("{% url 'update_billing_info' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data); // Add this line to see the response
+            if (data.success) {
+                alert('Billing info updated successfully!');
+                document.getElementById("billingInfoModal").style.display = "none";
+                location.reload();
+            } else {
+                alert('Failed to update billing info.');
+            }
+        });
+    });
+    
+</script> {% endcomment %}
+
+
+
+### Payment old view
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from .models import Payment, Profile  # Make sure to import the Profile model
+from signUp.models import CustomUser  # Adjust the import according to your project structure
+from django.contrib import messages
+from django.http import JsonResponse
+
+@login_required
+def payment_page(request, candidate_id):
+    candidate = get_object_or_404(CustomUser, id=candidate_id)
+    return render(request, 'payment/payment_page.html', {'candidate': candidate})
+
+@login_required
+def process_payment(request):
+    if request.method == 'POST':
+        upi_id = request.POST.get('upi_id', '')
+        card_number = request.POST.get('card_number', '')
+        card_expiry = request.POST.get('card_expiry', '')
+        card_cvv = request.POST.get('card_cvv', '')
+        amount = 100.00  # You can set this dynamically based on your requirement
+        
+        recruiter = request.user
+        candidate = get_object_or_404(CustomUser, username=request.POST['candidate_username'])
+        
+        # Process the payment here
+        # For demonstration purposes, we will assume payment is always successful
+        
+        # Determine the payment method
+        if upi_id:
+            payment_method = 'UPI'
+        else:
+            payment_method = 'Card'
+        
+        # Save the payment details in the database
+        Payment.objects.create(
+            recruiter=recruiter,
+            candidate=candidate,
+            amount=amount,
+            payment_method=payment_method
+        )
+        
+        messages.success(request, 'Payment processed successfully!')
+        return redirect('success_page')  # Redirect to a success page or any other page
+    else:
+        messages.error(request, 'Invalid request')
+        return redirect('payment_page')
+    
+# views.py
+from django.shortcuts import render
+
+def success_page(request):
+    return render(request, 'payment/success.html')
+    
+
+@login_required
+def edit_billing_info(request):
+    profile, created = Profile.objects.get_or_create(user=request.user, defaults={
+        'full_name': '',
+        'company_name': '',
+        'country': '',
+        'state': '',
+        'address': '',
+        'city': '',
+        'postal_code': '',
+        'is_indian_citizen': False,
+        'receive_invoices_via_email': False
+    })
+    if request.method == 'POST':
+        profile.full_name = request.POST.get('full_name')
+        profile.company_name = request.POST.get('company_name')
+        profile.country = request.POST.get('country')
+        profile.state = request.POST.get('state')
+        profile.address = request.POST.get('address')
+        profile.city = request.POST.get('city')
+        profile.postal_code = request.POST.get('postal_code')
+        profile.is_indian_citizen = request.POST.get('is_indian_citizen') == 'yes'
+        profile.receive_invoices_via_email = 'receive_invoices_via_email' in request.POST
+        profile.save()
+        return redirect('payment_page', candidate_id=request.user.id)  # Redirect to the payment page after saving
+    return render(request, 'payment/edit_billing_info.html', {'profile': profile})
+
+
+### som updated payment view
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from .models import Payment, Profile, Subscription  # Ensure all necessary models are imported
+from signUp.models import CustomUser  # Adjust the import according to your project structure
+from django.contrib import messages
+from django.http import JsonResponse
+from django.core.mail import EmailMultiAlternatives
+from smtplib import SMTPAuthenticationError, SMTPException
+from django.utils import timezone
+from django.template.loader import render_to_string
+from django.conf import settings
+import logging
+from decimal import Decimal
+
+logger = logging.getLogger(__name__)
+
+@login_required
+def payment_page(request, subscription_id):
+    subscription = get_object_or_404(Subscription, id=subscription_id)
+    
+    # Convert subscription price to Decimal if necessary (depending on your model definition)
+    subscription_price = Decimal(subscription.price)
+    
+    # Calculate service fee and GST based on subscription price (using Decimal)
+    service_fee = subscription_price * Decimal('0.02')
+    gst = subscription_price * Decimal('0.12')
+    total_amount = subscription_price + service_fee + gst
+    
+    return render(request, 'payment/payment_page.html', {
+        'subscription': subscription,
+        'service_fee': service_fee,
+        'gst': gst,
+        'total_amount': total_amount,
+    })
+
+@login_required
+def process_payment(request):
+    if request.method == 'POST':
+        try:
+            upi_id = request.POST.get('upi_id', '')
+            card_number = request.POST.get('card_number', '')
+            card_expiry = request.POST.get('card_expiry', '')
+            card_cvv = request.POST.get('card_cvv', '')
+            amount = Decimal(request.POST.get('amount'))  # Use the total amount from the form
+
+            recruiter = request.user
+            candidate_name = request.POST.get('candidate_name', '')
+            candidate_email = request.POST.get('candidate_email', '')
+
+            # Ensure that either UPI ID or card details are provided
+            if not upi_id and not (card_number and card_expiry and card_cvv):
+                messages.error(request, 'Please provide UPI ID or card details.')
+                return redirect('payment_page', subscription_id=request.POST.get('subscription_id'))
+
+            # Process the payment here
+            # For demonstration purposes, we will assume payment is always successful
+
+            # Determine the payment method
+            payment_method = 'UPI' if upi_id else 'Card'
+
+            # Save the candidate details in the database
+            candidate, created = CustomUser.objects.get_or_create(
+                email=candidate_email,
+                defaults={'first_name': candidate_name.split()[0], 'last_name': ' '.join(candidate_name.split()[1:])}
+            )
+
+            # Save the payment details in the database
+            Payment.objects.create(
+                recruiter=recruiter,
+                candidate=candidate,
+                amount=amount,
+                payment_method=payment_method
+            )
+
+            # Send invoice email
+            context = {
+                'recruiter': recruiter,
+                'candidate': candidate,
+                'amount': amount,
+                'payment_method': payment_method,
+                'date': timezone.now()
+            }
+            subject = 'Payment Confirmation and Invoice'
+            html_message = render_to_string('payment/invoice.html', context)
+            from_email = settings.DEFAULT_FROM_EMAIL
+            to_email = recruiter.email
+
+            msg = EmailMultiAlternatives(subject, html_message, from_email, [to_email])
+            msg.attach_alternative(html_message, "text/html")
+            msg.send()
+            logger.info("Email sent successfully")
+
+            messages.success(request, 'Payment processed successfully! An invoice has been sent to your email.')
+            return redirect('success_page')  # Redirect to a success page or any other page
+
+        except SMTPAuthenticationError as e:
+            logger.error(f'SMTP Authentication Error: {e}')
+            messages.error(request, 'Failed to send email due to authentication error. Please check your email settings.')
+            return redirect('payment_page', subscription_id=request.POST.get('subscription_id'))
+
+        except SMTPException as e:
+            logger.error(f'SMTP Error: {e}')
+            messages.error(request, 'Failed to send email due to an SMTP error. Please try again later.')
+            return redirect('payment_page', subscription_id=request.POST.get('subscription_id'))
+
+        except Exception as e:
+            logger.error(f'Error processing payment: {e}')
+            messages.error(request, 'An error occurred while processing your payment. Please try again later.')
+            return redirect('payment_page', subscription_id=request.POST.get('subscription_id'))
+
+    else:
+        messages.error(request, 'Invalid request')
+    
+    return redirect('payment_page')  # Handle other scenarios where redirection is needed
+
+def success_page(request):
+    return render(request, 'payment/success.html')
+
+@login_required
+def edit_billing_info(request):
+    # Fetch or create the profile associated with the current user
+    profile, created = Profile.objects.get_or_create(user=request.user, defaults={
+        'full_name': '',
+        'company_name': '',
+        'country': '',
+        'state': '',
+        'address': '',
+        'city': '',
+        'postal_code': '',
+        'is_indian_citizen': False,
+        'receive_invoices_via_email': False
+    })
+    if request.method == 'POST':
+        # Update profile fields based on POST data
+        profile.full_name = request.POST.get('full_name', '')
+        profile.company_name = request.POST.get('company_name', '')
+        profile.country = request.POST.get('country', '')
+        profile.state = request.POST.get('state', '')
+        profile.address = request.POST.get('address', '')
+        profile.city = request.POST.get('city', '')
+        profile.postal_code = request.POST.get('postal_code', '')
+        profile.is_indian_citizen = request.POST.get('is_indian_citizen') == 'yes'
+        profile.receive_invoices_via_email = 'receive_invoices_via_email' in request.POST
+        profile.save()
+        
+        # Retrieve the subscription associated with the user's profile
+        subscription = Subscription.objects.get(id=3)  # Adjust this based on your model structure
+        print("subscription.id" ,subscription.id)
+        # Redirect to payment page with the correct subscription_id
+        return redirect('payment_page', subscription_id=subscription.id)
+
+    return render(request, 'payment/edit_billing_info.html', {'profile': profile})
+
+def subscription_list(request):
+    subscriptions = Subscription.objects.all()
+    for subscription in subscriptions:
+        subscription.features_list = subscription.features.split(",")
+    return render(request, 'payment/subscription_list.html', {'subscriptions': subscriptions})
+
+
+
+
+
+
+
+===============editform form==========================
+class EditUserForm(forms.ModelForm):
+    class Meta:
+        model = CustomUser
+        fields = ['first_name', 'last_name','email' ,'phone']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class':'form-control', 'placeholder': 'First Name'}),
+            'last_name': forms.TextInput(attrs={'class':'form-control', 'placeholder': 'Last Name'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone Number'}),
+            'email': forms.EmailInput(attrs={'class':'form-control', 'placeholder': 'Email Address'}),
+        }
+
+
+===================== change password form ==================================
+class CustomPasswordChangeForm(PasswordChangeForm):
+    old_password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'autocomplete': 'off' ,'placeholder': 'Enter old password'}))
+    new_password1 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Enter new password'}))
+    new_password2 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Confirm new password'}))
+    
+    def clean_old_password(self):
+        old_password = self.cleaned_data.get('old_password')
+        user = authenticate(username=self.user.username, password=old_password)
+        if not user:
+            raise forms.ValidationError("Invalid old password.")
+        return old_password
+
+    def clean(self):
+        cleaned_data = super().clean()
+        new_password1 = cleaned_data.get('new_password1')
+        new_password2 = cleaned_data.get('new_password2')
+        if new_password1 and new_password2 and new_password1 != new_password2:
+            raise forms.ValidationError("The new passwords do not match.")
+        return cleaned_data             
+
+@login_required
+def settings_View(request):
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+    except UserProfile.DoesNotExist:
+        user_profile = UserProfile.objects.create(user=request.user)
+
+    profile = None
+    if request.user.role == CustomUser.RECRUITER:
+        profile = get_object_or_404(RecruiterProfile, user=request.user)
+    elif request.user.role == CustomUser.CANDIDATE:
+        profile = get_object_or_404(CandidateProfile, user=request.user)
+
+    if request.method == 'POST':
+        if 'save_changes' in request.POST:
+            form = EditUserForm(request.POST, instance=request.user)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Settings updated successfully.')
+                return redirect('settings')
+            else:
+                messages.error(request, 'Error updating settings. Please check the form and try again.')
+        elif 'change_password' in request.POST:
+            change_passform = CustomPasswordChangeForm(request.user, request.POST)
+            if change_passform.is_valid():
+                user = change_passform.save()
+                update_session_auth_hash(request, user)  # Important for keeping the user logged in after password change
+                messages.success(request, 'Your password has been changed successfully!')
+                return redirect('settings')
+            else:
+                messages.error(request, 'Please correct the error below.')
+        else:
+            form = EditUserForm(instance=request.user)  # Ensure form is always defined
+            change_passform = CustomPasswordChangeForm(request.user)  # Ensure change_passform is always defined
+    else:
+        form = EditUserForm(instance=request.user)
+        change_passform = CustomPasswordChangeForm(request.user)
+
+    context = {
+        'custom_user': request.user,
+        'form': form,
+        'profile': profile,
+        'change_passform': change_passform,
+    }
+
+    return render(request, 'profiles/settings.html', context)
