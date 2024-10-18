@@ -1,26 +1,60 @@
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib import messages
-from .forms import ProjectExperienceForm ,EditUserForm ,CustomPasswordChangeForm ,UserProfileForm
-from .models import UserProfile ,ProjectExperience
-from signUp.models import CustomUser ,RecruiterProfile ,CandidateProfile
+from .forms import ProjectExperienceForm, EditUserForm, CustomPasswordChangeForm, UserProfileForm ,SocialLinkForm
+from .models import UserProfile, ProjectExperience, PrivacyPolicy,SocialLink
+from signUp.models import CustomUser, RecruiterProfile, CandidateProfile
 from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import update_session_auth_hash
+from progress_tracker.models import Project
+from payment.models import Payment 
+from django.db.models import Sum
 
-# profile view
 @login_required
 def profiles_View(request):
     try:
         user_profile = UserProfile.objects.get(user=request.user)
-        print(user_profile)
     except UserProfile.DoesNotExist:
-        # Handle the case where the user profile does not exist
         user_profile = UserProfile.objects.create(user=request.user)
-        # Optionally, you can redirect the user to an edit profile page or display a message
+
     profile_image_url = user_profile.profile_image.url if user_profile.profile_image else None
     project_experiences = ProjectExperience.objects.filter(user_profile=user_profile)
 
-    return render(request, 'profiles/profiles.html', {'user_profile': user_profile ,'profile_image_url': profile_image_url ,'project_experiences': project_experiences,})
+    # Fetch projects where the logged-in user is the client
+    candidate_projects = Project.objects.filter(user=request.user)
+    projects = Project.objects.filter(client=request.user)
+
+    # Initialize variables for payments made and received
+    total_payments_made = 0
+    total_payments_received = 0
+
+    # Handle recruiter payments made
+    payments_made = Payment.objects.filter(recruiter=request.user)
+    total_payments_made = payments_made.aggregate(Sum('amount'))['amount__sum'] or 0
+    
+    # Handle candidate payments received
+    if hasattr(request.user, 'candidateprofile'):
+        payments_received = Payment.objects.filter(candidate=request.user.candidateprofile)
+        total_payments_received = payments_received.aggregate(Sum('amount'))['amount__sum'] or 0
+
+    # Calculate the current balance
+    current_balance = total_payments_made
+    
+    # social Links
+    social_links = SocialLink.objects.filter(user_profile=user_profile)
+
+    return render(request, 'profiles/profiles.html', {
+        'user_profile': user_profile,
+        'profile_image_url': profile_image_url,
+        'project_experiences': project_experiences,
+        'projects': projects,
+        'candidate_projects': candidate_projects,
+        'payments_made': payments_made,  # Pass payments made to the template
+        'total_payments_received': total_payments_received,  # Pass the total payments received to the template
+        'current_balance': current_balance,  # Pass the current balance to the template
+        'social_links': social_links,
+    })
+
 
 
 @login_required
@@ -36,86 +70,156 @@ def settings_View(request):
     elif request.user.role == CustomUser.CANDIDATE:
         profile = get_object_or_404(CandidateProfile, user=request.user)
 
+    form = EditUserForm(instance=request.user)
+    change_passform = CustomPasswordChangeForm(request.user)
+    
+    profile_image_url = user_profile.profile_image.url if user_profile.profile_image else None
+
     if request.method == 'POST':
         if 'save_changes' in request.POST:
             form = EditUserForm(request.POST, instance=request.user)
             if form.is_valid():
                 form.save()
-                messages.success(request, 'Settings updated successfully.')
+                messages.success(request, 'Personal information updated successfully.', extra_tags='settings')
                 return redirect('settings')
             else:
-                messages.error(request, 'Error updating settings. Please check the form and try again.')
+                messages.error(request, 'Please correct the errors below.', extra_tags='settings')
         elif 'change_password' in request.POST:
             change_passform = CustomPasswordChangeForm(request.user, request.POST)
             if change_passform.is_valid():
-                change_passform.save()
-                update_session_auth_hash(request, request.user)  # Update the session with the new password hash
-                messages.success(request, 'Your password has been changed successfully!')
+                user = change_passform.save()
+                update_session_auth_hash(request, user)
+                messages.success(request, 'Password changed successfully.', extra_tags='settings')
                 return redirect('settings')
             else:
-                messages.error(request, 'Please correct the error below.')
-    else:
-        form = EditUserForm(instance=request.user)
-        change_passform = CustomPasswordChangeForm(request.user)
+                messages.error(request, 'Please correct the errors below.', extra_tags='settings')
 
     context = {
         'custom_user': request.user,
-        'form': form,
         'profile': profile,
+        'form': form,
         'change_passform': change_passform,
+        'profile_image_url':profile_image_url
     }
-
     return render(request, 'profiles/settings.html', context)
 
-
-
-# profile view
+@login_required
 def edit_profile_View(request):
     try:
-        user_profile = get_object_or_404(UserProfile, user=request.user)
+        user_profile = UserProfile.objects.get(user=request.user)
     except UserProfile.DoesNotExist:
         user_profile = UserProfile(user=request.user)
+
+    profile_image_url = user_profile.profile_image.url if user_profile.profile_image else None        
 
     if request.method == 'POST':
         form = UserProfileForm(request.POST, request.FILES, instance=user_profile)
         if form.is_valid():
-            # Check if a file is uploaded for the profile image
             if 'profile_image' in request.FILES:
                 profile_image = request.FILES['profile_image']
-                # Truncate or rename the filename if it exceeds the limit
                 max_filename_length = 1000
                 if len(profile_image.name) > max_filename_length:
                     profile_image.name = profile_image.name[:max_filename_length]
+                    
+            if 'resume' in request.FILES:
+                resume_file = request.FILES['resume']
+                max_filename_length = 5000
+                if len(resume_file.name) > max_filename_length:
+                    resume_file.name = resume_file.name[:max_filename_length]
+                user_profile.resume = resume_file
+
             try:
                 form.save()
-                messages.success(request, 'Profile updated successfully.')
-                return redirect('profiles')  # Redirect to the profile view after successful update
+                messages.success(request, 'Profile updated successfully.', extra_tags='edit_profile')
+                return redirect('profiles')
             except ValidationError as e:
                 edit_messages = e.message_dict
-                form = UserProfileForm(instance=user_profile)
-                return render(request, 'profiles/edit_profile.html', {'form': form, 'edit_message': edit_messages })
+                return render(request, 'profiles/edit_profile.html', {'form': form, 'edit_messages': edit_messages})
+        else:
+            edit_messages = form.errors
+            return render(request, 'profiles/edit_profile.html', {'form': form, 'edit_messages': edit_messages})
     else:
         form = UserProfileForm(instance=user_profile)
-    return render(request, 'profiles/edit_profile.html', {'form': form})
-
+    return render(request, 'profiles/edit_profile.html', {'form': form , 'profile_image_url':profile_image_url})
 
 @login_required
 def add_project(request):
-    user_profile = get_object_or_404(UserProfile, user=request.user)
+    profile_image_url = None
+    if request.user.is_authenticated:
+        try:
+            user_profile = UserProfile.objects.get(user=request.user)
+            profile_image_url = user_profile.profile_image.url if user_profile.profile_image else None
+        except UserProfile.DoesNotExist:
+            profile_image_url = None
+    
     if request.method == 'POST':
         form = ProjectExperienceForm(request.POST)
         if form.is_valid():
-            project = form.save(commit=False)
-            project.user_profile = user_profile  # Assign the current user's profile to the project
-            project.save()
-            messages.success(request, 'Project added successfully.')
+            project_experience = form.save(commit=False)
+            project_experience.user_profile = user_profile
+            project_experience.save()
+            messages.success(request, 'Project/Experience added successfully.', extra_tags='add_project')
             return redirect('profiles')
         else:
-            messages.error(request, 'Error adding project. Please check the form and try again.')
+            messages.error(request, 'Error adding project/experience. Please check the form and try again.', extra_tags='add_project')
     else:
         form = ProjectExperienceForm()
-    return render(request, 'profiles/project_experience.html', {'form': form})
+    return render(request, 'profiles/project_experience.html', {'form': form ,'profile_image_url':profile_image_url})
+
+@login_required
+def delete_project_experience(request, project_experience_id):
+    project_experience = get_object_or_404(ProjectExperience, id=project_experience_id)
+
+    profile_image_url = None
+    if request.user.is_authenticated:
+        try:
+            user_profile = UserProfile.objects.get(user=request.user)
+            profile_image_url = user_profile.profile_image.url if user_profile.profile_image else None
+        except UserProfile.DoesNotExist:
+            profile_image_url = None  
+
+    if request.method == 'POST':
+        project_experience.delete()
+        messages.success(request, 'Project experience deleted successfully.', extra_tags='delete_project')
+        return redirect('profiles')
+
+    return render(request, 'profiles/confirm_delete.html', {'project_experience': project_experience ,'profile_image_url':profile_image_url})
+
+def add_social_link(request):
+    if request.method == 'POST':
+        form = SocialLinkForm(request.POST)
+        if form.is_valid():
+            social_link = form.save(commit=False)
+            social_link.user_profile = request.user.userprofile  # Assuming the user has a UserProfile
+            social_link.save()
+            return redirect('profiles')  # Redirect to the user's profile or any other page
+    else:
+        form = SocialLinkForm()
+        
+    profile_image_url = None
+    
+    if request.user.is_authenticated:
+        try:
+            user_profile = UserProfile.objects.get(user=request.user)
+            profile_image_url = user_profile.profile_image.url if user_profile.profile_image else None
+        except UserProfile.DoesNotExist:
+            profile_image_url = None        
+    context={
+        'form': form,
+        'profile_image_url':profile_image_url,
+    }            
+
+    return render(request, 'profiles/add_social_link.html', context)
 
 
 def privacy_policy_view(request):
-    return render(request, 'profiles/privacy_policy.html')
+    profile_image_url = None
+    if request.user.is_authenticated:
+        try:
+            user_profile = UserProfile.objects.get(user=request.user)
+            profile_image_url = user_profile.profile_image.url if user_profile.profile_image else None
+        except UserProfile.DoesNotExist:
+            profile_image_url = None
+     
+    privacy_policy = get_object_or_404(PrivacyPolicy)
+    return render(request, 'profiles/privacy_policy.html', {'privacy_policy': privacy_policy ,'profile_image_url':profile_image_url})

@@ -14,6 +14,14 @@ def talent_view(request):
     rest_of_skills = Skills.objects.exclude(id=random_skill.id)
     random_contracts = f"{random.randint(10, 50)}+"
 
+    profile_image_url = None
+    if request.user.is_authenticated:
+        try:
+            user_profile = UserProfile.objects.get(user=request.user)
+            profile_image_url = user_profile.profile_image.url if user_profile.profile_image else None
+        except UserProfile.DoesNotExist:
+            profile_image_url = None
+
     context = {
         'random_skill': random_skill.skill,
         'related_services': related_services,
@@ -21,6 +29,7 @@ def talent_view(request):
         'rest_of_skills': rest_of_skills,
         'total_skills': total_skills,
         'random_contracts': random_contracts,
+        'profile_image_url':profile_image_url
     }
 
     return render(request, 'talents/talents.html', context)
@@ -34,8 +43,21 @@ def fetch_skill_data(request, skill_id):
     data = {
         'random_skill': skill.skill,
         'random_contracts': random_contracts,
-        'related_services': [{'id': service.id, 'name': service.name, 'rating': '⭐ 4.8 average rating'} for service in related_services],
-        'related_user_profiles': [{'profile_image': user.profile_image.url, 'username': user.user.username} for user in related_user_profiles],
+        'related_services': [
+            {
+                'id': service.id,
+                'name': service.name,
+                'icon': service.icon.url if service.icon else None  # Add the icon URL or None if not available
+            } 
+            for service in related_services
+        ],
+        'related_user_profiles': [
+            {
+                'profile_image': user.profile_image.url,
+                'username': user.user.username
+            } 
+            for user in related_user_profiles
+        ],
     }
 
     return JsonResponse(data)

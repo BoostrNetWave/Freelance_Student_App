@@ -7,382 +7,510 @@ Profile
 
 {% block head_css %}
 <link rel="stylesheet" href="{% static 'css/button.css' %}">
-<link rel="stylesheet" href="{% static 'css/profile.css' %}">
-<link rel="stylesheet" href="{% static 'css/style.css' %}">
-<link rel="stylesheet" href="{% static 'css/social_icon.css' %}">
+<link rel="stylesheet" href="{% static 'css/profiles.css' %}">
+<link rel="stylesheet" href="{% static 'css/Layout.css' %}">
+<link rel="stylesheet" href="{% static 'css/social_Icon_list.css' %}">
 {% endblock %}
 
-{% block content %}
-    <div class="container">
-      <div class="row">
-        <div class="col-md-3 sidebar">
-          <h3 class="mb-4">Profile</h3>
-          {% if request.session.user_role == "Candidate" %}
-          <a href="#" id="myInfoLink" class="active">My Info</a>
-          <a href="#" id="projectsLink">Projects / Experience</a>
-          <a href="#" id="testLink">Take your Test</a>
-          <a href="#" id="projectcompleteLink">Projects Completed</a>
-          <a href="#" id="connectLink">Connect With</a>
-          {% elif request.session.user_role == "Recruiter" %}
-          <a href="#" id="myInfoLink" class="active">My Info</a>
-          <a href="#" id="billingLink">Billing & Payments</a>
-          {% endif %}
-        </div>
-        <div class="col-md-9 main-content">
-          <div id="myInfoSection" class="content-section active">
-            <h4 class="section-heading">My Info</h4>
-            <p>{{ user.role }} Account</p>
-            {% if request.session.user_role == "Candidate" %}
-            <div class="card card-custom mb-4">
-                <h5>Account</h5>
-                <div class="d-flex align-items-center">
-                    <div class="profile" style="margin-right: 15px;">
-                      <img src="{% if user_profile.profile_image %}{{ user_profile.profile_image.url }}{% else %}{% static 'assets/alchemyrefiner_alchemymagic_2_e5784fc4-a8ed-4dfc-ba42-a091b7aa846a_0.jpg' %}{% endif %}" alt="Profile" class="profile-image">
-                    </div>
-                    <div>
-                        <p class="mb-1 profile_name">{{ user.first_name }} {{ user.last_name }}</p>
-                        <p class="mb-1 ">{{ user_profile.position }}</p>
-                        <small>Email: {{ user.email }}</small>
-                    </div>
-                </div>
-            </div>
-            {% elif request.session.user_role == "Recruiter" %}
-            <div class="card card-custom mb-4">
-                <h5>Account</h5>
-                <div class="d-flex align-items-center">
-                    <div class="profile" style="margin-right: 15px;">
-                      <img src="{% if user_profile.profile_image %}{{ user_profile.profile_image.url }}{% else %}{% static 'assets/alchemyrefiner_alchemymagic_2_e5784fc4-a8ed-4dfc-ba42-a091b7aa846a_0.jpg' %}{% endif %}" alt="Profile" class="profile-image">
-                    </div>
-                    <div>
-                        <p class="mb-1 profile_name">{{ user.first_name }} {{ user.last_name }}</p>
-                        <p class="mb-1 ">Role : {{ user_profile.position }}</p>
-                        <small>Email: {{ user.email }}</small>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
 
-            <div class="card card-custom mb-4">
-                <h5>Profile details</h5>
-                <div class="d-flex">
-                    <div class="profile" style="margin-right: 15px;">
-                      <img src="{% if user_profile.profile_image %}{{ user_profile.profile_image.url }}{% else %}{% static 'assets/alchemyrefiner_alchemymagic_2_e5784fc4-a8ed-4dfc-ba42-a091b7aa846a_0.jpg' %}{% endif %}" alt="Profile" class="profile-image">
-                    </div>
-                    <div>
-                        <p class="profile_detailes"><span>Name :</span><br>{{ user.first_name }} {{ user.last_name }}</p>
-                        <!-- Add other profile details specific to candidate or recruiter -->
+{% block content%}
+  <div class="container">
+      <div class="main-container my-5">
+          <div class="row">
+              <!-- Sidebar -->
+              <div class="col-md-3 col-lg-2 sidebar">
+                  <div>
+                      <h4 class="text-center">Account Setting</h4>
+                  </div>
+                  {% if request.session.user_role == "Candidate"%}
+                  <a href="#" class="nav-link active my-4 px-4" onclick="showContent('myInfo')">My Info</a>
+                  <a href="#" class="nav-link my-4 px-4" onclick="showContent('projects')">Projects</a>
+                  <a href="#" class="nav-link my-4 px-4" onclick="showContent('ProjectProgress')">Project Progress</a>
+                  <a href="#" class="nav-link my-4 px-4" onclick="showContent('connectWith')">Connect With</a>
+                  {% elif request.session.user_role == "Recruiter"%}
+                  <a href="#" class="nav-link active my-4 px-4" onclick="showContent('myInfo')">My Info</a>
+                  <a href="#" class="nav-link my-4 px-4" onclick="showContent('billingInfo')">Billing Info</a>
+                  <a href="#" class="nav-link my-4 px-4" onclick="showContent('ProjectProgress')">Project Progress</a>
+                  <a href="#" class="nav-link my-4 px-4" onclick="showContent('connectWith')">Connect With</a>
+                  {% endif %}
+              </div>
+
+              <!-- Main Content Area -->
+              <div class="col-sm-10 col-md-8 col-lg-9 ms-5 content-area">
+                  <!-- My Info Section -->
+                  <div id="myInfo" class="content-section">
+                      <h3>MyInfo</h3>
+                      <p>{{user.role}} account</p>
+                      <div class="profile-section p-4 rounded shadow-sm" style="border: 1px solid #e0e0e0;">
+                          <img src="{% if user_profile.profile_image %}{{ user_profile.profile_image.url }}{% else %}{% static 'assets/requiter2.jpg' %}{% endif %}" alt="Profile" class="profile-img">
+                          <div class="profile-info">
+                              <h4>{{ user.first_name}} {{ user.last_name}}</h4>
+                              <p>{{user_profile.position}}</p>
+                              <p>{{ user.username }}</p>
+
+                          </div>
+                      </div>
+
+                      <!-- Personal Information Section -->
+                      <div class="mt-4 info-card p-4 rounded shadow-sm" style="border: 1px solid #e0e0e0;">
+                          <div class="d-flex justify-content-between align-items-center mb-3">
+                              <h4 class="mb-0">Personal Information</h4>
+                              <a href="{% url 'profile_edit' %}"><button class="px-3">
+                                <span>Edit</span><i class="bi bi-pencil"></i>
+                              </button>
+                              </a>
+                          </div>
+                          <div class="row">
+                              <!-- First Name and Last Name -->
+                              <div class="col-md-6 mb-3">
+                                  <p class="text-muted mb-1">First Name</p>
+                                  <p class="fw-bold">{{ user.first_name}}</p>
+                              </div>
+                              <div class="col-md-6 mb-3">
+                                  <p class="text-muted mb-1">Last Name</p>
+                                  <p class="fw-bold">{{ user.last_name}}</p>
+                              </div>
+
+                              <!-- Email and Phone -->
+                              <div class="col-md-6 mb-3">
+                                  <p class="text-muted mb-1">Email</p>
+                                  <p class="fw-bold">{{user.email}}</p>
+                              </div>
+                              <div class="col-md-6 mb-3">
+                                  <p class="text-muted mb-1">Phone</p>
+                                  <p class="fw-bold">{{user.phone}}</p>
+                              </div>
+                              <!-- Bio -->
+                              {% if request.session.user_role == "Candidate"%}
+                              <div class="col-md-6 mb-3">
+                                  <p class="text-muted mb-1">Bio</p>
+                                  <p class="fw-bold">{{user_profile.position}}</p>
+                              </div>
+                              <div class="col-md-6 mb-3">
+                                  <p class="text-muted mb-1">Date Of Birth</p>
+                                  <p class="fw-bold">{{user.profile.dob}}</p>
+                              </div>
+                              {% elif request.session.user_role == "Recruiter"%}
+                              <div class="col-md-6 mb-3">
+                                  <p class="text-muted mb-1">Bio</p>
+                                  <p class="fw-bold">{{user_profile.position}}</p>
+                              </div>
+                              {%endif%}
+                          </div>
+                      </div>
+
+                      <!-- Address Section -->
+                      <div class="mt-4 info-card p-4 rounded shadow-sm" style="border: 1px solid #e0e0e0;">
+                          <div class="d-flex justify-content-between align-items-center mb-3">
+                              <h4 class="mb-0">Address</h4>
+                          </div>
+                          <div class="row">
+                              <!-- Country and State -->
+                              <div class="col-md-6 mb-3">
+                                  <p class="text-muted mb-1">Country</p>
+                                  <p class="fw-bold">{{user_profile.country.name}}</p>
+                              </div>
+                              <div class="col-md-6 mb-3">
+                                  <p class="text-muted mb-1">State</p>
+                                  <p class="fw-bold">{{user_profile.state}}</p>
+                              </div>
+
+                              <!-- City and Pin Code -->
+                              <div class="col-md-6 mb-3">
+                                  <p class="text-muted mb-1">City</p>
+                                  <p class="fw-bold">{{user_profile.city}}</p>
+                              </div>
+                              <div class="col-md-6 mb-3">
+                                  <p class="text-muted mb-1">Pin Code</p>
+                                  <p class="fw-bold">{{user_profile.postal_code}}</p>
+                              </div>
+                          </div>
+                      </div>
+
+                      <!-- Education Section -->
+                      <div class="mt-4 info-card p-4 rounded shadow-sm" style="border: 1px solid #e0e0e0;">
+                          <div class="d-flex justify-content-between align-items-center mb-3">
+                              <h4 class="mb-0">Education</h4>
+                          </div>
+                          <div class="row">
+                              <!-- Country and State -->
+                              <div class="col-md-6 mb-3">
+                                  <p class="text-muted mb-1">Last Exam Pass</p>
+                                  <p class="fw-bold">{{user_profile.education}}</p>
+                              </div>
+                              <div class="col-md-6 mb-3">
+                                  <p class="text-muted mb-1">State</p>
+                                  <p class="fw-bold">{{user_profile.university}}</p>
+                              </div>
+                          </div>
+                      </div>
+
+                    <div class="mt-4 p-4 rounded shadow-sm" style="border: 1px solid #e0e0e0;">
+                        <!-- Resume Section -->
                         {% if request.session.user_role == "Candidate" %}
-                        <p class="profile_detailes"> <span>Date of Birth :</span> <br>{{ user_profile.dob }}</p>
-                        <p class="profile_detailes"> <span>Phone :</span> <br> {{ user.phone }}</p>
-                        <p class="profile_detailes"> <span>Address :</span> <br> {{ user_profile.address }}</p>
-                        <p class="profile_detailes"> <span>Position:</span> <br> {{ user_profile.position }}</p>
-                        <p class="profile_detailes"> <span>Experience :</span> <br>  {{ user_profile.experience }}</p>
-                        <p class="profile_detailes"> <span>Skills :</span> <br>  {{ user_profile.skills }}</p>
-                        <p class="profile_detailes"> <span>Language :</span> <br>  {{ user_profile.languages }}</p>
-                        <p class="profile_detailes"> <span>Education :</span> <br>  {{ user_profile.education }}</p>
-                        <p class="profile_detailes"> <span>VAT ID No:</span> <br> {{ user_profile.vat_id }}</p>
-                        <!-- Candidate specific details -->
-                        {% elif request.session.user_role == "Recruiter" %}
-                        <p class="profile_detailes"> <span>Phone :</span> <br> {{user.phone}}</p>
-                        <p class="profile_detailes"> <span>Address :</span> <br> {{ user_profile.address }}</p>
-                        <p class="profile_detailes"> <span>Position:</span> <br> {{ user_profile.position }}</p>
-                        <p class="profile_detailes"> <span>VAT ID No:</span> <br> {{ user_profile.vat_id }}</p>
-                        <!-- Recruiter specific details -->
+                        <div class="resume-section">
+                            <h3>Resume</h3>
+                            <!-- View Resume Button -->                          
+                            {% if user_profile.resume %}
+                            <a href="{{ user_profile.resume.url }}" target="_blank" >
+                                <button class="px-3">
+                                    <span>View Resume</span>
+                                </button>
+                            </a>
+                            {% else %}
+                            <p>No resume uploaded.</p>
+                            {% endif %}       
+                        </div>
+                        {% endif %}       
+                    </div>
+                    
+                  </div>
+
+                  <!-- Projects Section -->
+                  <div id="projects" class="content-section" style="display:none;">
+                      <h3>project</h3>
+                      <!-- Add Projects Card -->
+                      <div class="add-project-card p-4 mb-4 rounded shadow-sm d-flex justify-content-between align-items-center"
+                          style="border: 1px solid #e0e0e0;">
+                          <!-- Left side: Text content -->
+                          <div>
+                              <h5 class="fw-bold mb-2">Add Your Projects and Experience</h5>
+                              <p class="text-muted mb-0">Innovative solution drives impact, fueling passion for
+                                  continuous growth.</p>
+                          </div>
+
+                          <!-- Right side: Button -->
+                          <a href="{% url 'add_project' %}"><button class="px-3"><span>Add Projects</span></button></a>
+                      </div>
+
+                      <!-- Project Card 1 -->
+                      {% if project_experiences %}
+                          {% for project in project_experiences %}
+                          <div class="project-card mb-4">
+                              <div class="project-info">
+                                  <div class="left-section">
+                                      <h5>Project 1: {{ project.title }}</h5>
+                                      <p><strong>Contributions:</strong>{{ project.contribution }}</p>
+                                  </div>
+                                  <div class="right-section">
+                                      <button class="btn btn-light px-3 py-1"
+                                          style="border-radius: 20px; background-color: #e8f5e9;">
+                                          Edit <i class="bi bi-pencil"></i>
+                                      </button>
+                                  </div>
+                              </div>
+
+                              <div class="divider"></div>
+
+                              <div class="project-info">
+                                  <p><strong>Technology Used:</strong> <span class="tech-used">{{ project.technologies }}</span></p>
+                              </div>
+
+                              <div class="description">
+                                  <p>{{ project.description|safe }}</p>
+                              </div>
+                          </div>
+                          {% endfor %}
+                          <a href="{% url 'add_project' %}"><button type="button" class="px-3" data-toggle="modal" data-target="#addProjectModal"><span>Add Project / Experience</span></button></a>
+                      {% else %}
+                              <div class="no-projects">
+                                  <p>No projects or experiences to display.</p>
+                                  <a href="{% url 'add_project' %}"><button type="button" class="px-3" data-toggle="modal" data-target="#addProjectModal"><span>Add Project / Experience</span></button></a>
+                              </div>
+                      {% endif %}
+                  </div>
+
+                  <!-- Billing Info Section -->
+                  <div id="billingInfo" class="content-section" style="display:none;">
+                      <!-- Billing Info Section -->
+                      <div class="billing-info-section">
+                          <!-- Add Billing Card -->
+                          <h3>Billing Info</h3>
+                          <div class="billing-card p-4 rounded d-flex justify-content-between align-items-center mb-4"
+                              style="border: 1px solid #e0e0e0; background-color: #fff; border-radius: 15px;">
+                              <!-- Left Side: Text -->
+                              <div>
+                                  <h4 class="fw-bold mb-2">Add your billing Info to receive and make payment</h4>
+                                  <p class="text-muted mb-0">Comprehensive overview of payment methods, billing
+                                      cycles, and account management.</p>
+                              </div>
+                              <!-- Right Side: Button -->
+                              <button class="btn btn-light px-3 py-1"
+                                  style="border-radius: 25px; font-size: 1rem; font-weight: 600;">Add Billing</button>
+                          </div>
+
+                          <!-- Total Balance Section -->
+                          <div class="balance-card p-4 rounded d-flex justify-content-between align-items-center"
+                              style="border: 1px solid #e0e0e0; background-color: #fff; border-radius: 15px;">
+                              <!-- Left Side: Text -->
+                              <div>
+                                  <h4 class="fw-bold mb-2">Total Balance:</h4>
+                                  <p class="{% if current_balance < 0 %}text-danger{% else %}text-success{% endif %}" style="font-size: 3rem; color: #000;">{{ current_balance | floatformat:2 }}</p>
+                              </div>
+                          </div>
+                      </div>
+
+                      <!-- Billing Methods Section -->
+                      {% comment %} <div class="billing-methods-section p-4 rounded shadow-sm mb-4 mt-4"
+                          style="border: 1px solid #e0e0e0;">
+                          <!-- Title -->
+                          <h5 class="fw-bold mb-3">Billing Methods</h5>
+                          <p class="text-muted mb-4">Manage billing information and view recipes</p>
+
+                          <!-- UPI Method -->
+                          <div class="method-item d-flex justify-content-between align-items-center mb-3"
+                              style="border: 1px solid #e0e0e0; padding: 10px; border-radius: 8px;">
+                              <div class="d-flex align-items-center">
+                                  <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/Unified_Payments_Interface_logo.svg"
+                                      alt="UPI" style="width: 40px; margin-right: 15px;">
+                                  <span>UPI ending with ******6324@ybl</span>
+                              </div>
+                              <button class="btn btn-light" style="border-radius: 20px;">Remove</button>
+                          </div>
+
+                          <!-- VISA Method -->
+                          <div class="method-item d-flex justify-content-between align-items-center"
+                              style="border: 1px solid #e0e0e0; padding: 10px; border-radius: 8px;">
+                              <div class="d-flex align-items-center">
+                                  <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg" alt="VISA"
+                                      style="width: 40px; margin-right: 15px;">
+                                  <span>VISA ending with 6589</span>
+                              </div>
+                              <button class="btn btn-light" style="border-radius: 20px;">Remove</button>
+                          </div>
+                      </div> {% endcomment %}
+                      <!-- Payment History Section -->
+                      <div class="payment-history-section p-4 rounded shadow-sm mb-4"
+                          style="border: 1px solid #e0e0e0;">
+                          <!-- Title -->
+                          <h5 class="fw-bold mb-3">Payment History</h5>
+                          <p class="text-muted mb-4">Manage billing information and view recipes</p>
+
+                          <!-- Table for Payment History -->
+                          <div class="table-responsive">
+                              <table class="table table-borderless">
+                                  <thead>
+                                      <tr>
+                                          <th class="text-muted">Date</th>
+                                          <th class="text-muted">From</th>
+                                          <th class="text-muted">Status</th>
+                                          <th class="text-muted">Amount</th>
+                                          <th class="text-muted">Recipes</th>
+                                      </tr>
+                                  </thead>
+                                  <tbody>
+                                      {% if payments_made%}
+                                          {% for payment in payments_made %}  
+                                              <tr>
+                                                  <td>{{ payment.payment_date|date:"Y-m-d" }}</td>
+                                                  <td>{{ payment.recruiter.username }}</td>
+                                                  <td>{{ payment.status }}</td>
+                                                  <td>₹{{ payment.amount }}</td>
+                                                  <td>
+                                                      <button class="btn btn-light"
+                                                          style="border-radius: 20px;">Download</button>
+                                                          <button type="button" class="px-3" data-bs-toggle="modal" data-bs-target="#paymentDetailsModal-{{ payment.id }}">
+                                                              <span>View Payment Details</span>
+                                                          </button>
+                                                  </td>
+                                              </tr>
+                                              <!-- Modal -->
+                                              <div class="modal fade" id="paymentDetailsModal-{{ payment.id }}" tabindex="-1" aria-labelledby="paymentDetailsModalLabel-{{ payment.id }}" aria-hidden="true">
+                                                  <div class="modal-dialog">
+                                                      <div class="modal-content">
+                                                          <div class="modal-header">
+                                                              <h5 class="modal-title" id="paymentDetailsModalLabel-{{ payment.id }}">Payment Details</h5>
+                                                          </div>
+                                                          <div class="modal-body">
+                                                              <p><strong>Amount:</strong> ₹{{ payment.amount }}</p>
+                                                              <p><strong>Payment ID:</strong> {{ payment.razorpay_payment_id }}</p>
+                                                              <p><strong>Order ID:</strong> {{ payment.razorpay_order_id }}</p>
+                                                              <p><strong>Recruiter:</strong> {{ payment.recruiter.username }}</p>
+                                                              <p><strong>Date:</strong> {{ payment.payment_date }}</p>
+                                                              <p><strong>Status:</strong> {{ payment.status }}</p>
+                                                          </div>
+                                                          <div class="modal-footer">
+                                                              <button type="button" class="px-3" data-bs-dismiss="modal"><span>Close</span></button>
+                                                          </div>
+                                                      </div>
+                                                  </div>
+                                              </div>
+                                          {% endfor %} 
+                                      {% else %}
+                                      <p>No payment yet</p>
+                                      {% endif %}
+                                  </tbody>
+                              </table>
+                          </div>
+
+                          <!-- Load More Button -->
+                          <a href="#" class="text-success">Load More</a>
+                      </div>
+                  </div>
+
+                  <!-- Connect With Section -->
+                  <div id="connectWith" class="content-section" style="display:none;">
+                      <h3>Connect With</h3>
+                      <div class="billing-card p-4 rounded d-flex justify-content-between align-items-center mb-4"
+                          style="border: 1px solid #e0e0e0; background-color: #fff; border-radius: 15px;">
+                          <!-- Left Side: Text -->
+                          <div>
+                              <h4 class="fw-bold mb-2">Add your social media Links</h4>
+                              <p class="text-muted mb-0">Manage your social media links to connect with world</p>
+                          </div>
+                          <!-- Right Side: Button -->
+                          <a href="{% url "add_social_link" %}">
+                              <button class="px-3">
+                                <span>Add Links</span>
+                              </button>
+                          </a>
+                      </div>
+
+                      <!-- Social Links Section -->
+                      <div class="social-links-card p-4 rounded shadow-sm" style="border: 1px solid #e0e0e0;">
+                          <!-- Title and Edit Button -->
+                          <div class="d-flex justify-content-between align-items-center mb-3">
+                              <h5 class="fw-bold">Social Links</h5>
+                              <button class="px-3">
+                                  <span>Edit <i class="bi bi-pencil"></i></span>
+                              </button>
+                          </div>
+
+                          <!-- Links List -->
+                          <div class="links-list">
+                              {% for links in social_links %}
+                                  {% if links.platform == 'linkedin' %}
+                                  <div class="link-item mb-3">
+                                      <a href="{{links.link}}" target="_blank" style="text-decoration: none; font-size: 24px; font-weight: bold;color: #098761;"><i class="fab fa-linkedin"></i> LinkedIn</a>
+                                  </div>
+                                  {% elif links.platform == 'github' %}
+                                  <div class="link-item mb-3">                                   
+                                      <a href="{{links.link}}" target="_blank" style="text-decoration: none; font-size: 24px; font-weight: bold;color: #098761;"><i class="fab fa-github"></i> Github</a>
+                                  </div>
+                                  {% elif links.platform == 'twitter' %}
+                                  <div class="link-item mb-3">
+                                      <a href="{{links.link}}" target="_blank" style="text-decoration: none; font-size: 24px; font-weight: bold;color: #098761;"><i class="fab fa-twitter"></i> Twitter</a>
+                                  </div>
+                                  {% elif links.platform == 'facebook' %}
+                                  <div class="link-item mb-3">
+                                      <a href="{{links.link}}" target="_blank" style="text-decoration: none; font-size: 24px; font-weight: bold;color: #098761;"><i class="fab fa-facebook"></i> Facebook</a>
+                                  </div>
+                                  {% elif links.platform == 'instagram' %}
+                                  <div class="link-item mb-3">
+                                      <a href="{{links.link}}" target="_blank" style="text-decoration: none; font-size: 24px; font-weight: bold;color: #098761;"><i class="fab fa-instagram"></i> Instagram</a>
+                                  </div>
+                                  {% elif links.platform == 'website' %}
+                                  <div class="link-item mb-3">
+                                      <a href="{{links.link}}" target="_blank" style="text-decoration: none; font-size: 24px; font-weight: bold;color: #098761;"><i class="fa-solid fa-globe"></i> Website</a>
+                                  </div>
+                                  {% endif %}
+                              {% empty %}
+                              <p>No social link added yet</p>
+                              {% endfor %}
+                          </div>
+                      </div>
+                  </div>                                                                                                                                                                             
+
+                  <!-- ProjectProgress Section -->
+                  <div id="ProjectProgress" class="content-section" style="display:none;">
+                      <h3>Project Progress</h3>
+                      <!-- Profile Section -->
+                      {% if request.session.user_role == "Recruiter" %}
+                        <p>Track your project progress</p>
+                          {% if projects %}
+                              {% for project in projects %}
+                              <a href="{% url 'project_progress' project_id=project.id %}" style="text-decoration: none;color: #000;">
+                                  <div class="profile-section p-4 rounded shadow-sm mb-4" style="border: 1px solid #e0e0e0;" id="profileSection">
+                                      {% if project.image %}
+                                          <div class="project-image" style="margin-right: 15px;">
+                                              <img src="{{ project.image.url }}" alt="Project Image" class="project-image-thumbnail" style="width: 100px; height: 100px; object-fit: cover;">
+                                          </div>
+                                      {% endif %}
+                                      <div class="profile-info">
+                                          <h5>Project {{ project.id }}: <span> {{ project.project_name }}</span></h5>
+                                          <p><strong>Assigned Candidate:</strong> {{ project.user.first_name }} {{ project.user.last_name }}</p>
+                                          <p><strong>Project Costing:</strong> {{ project.project_costing }}</p>
+                                          {% if project.status == 'terminated' %}
+                                              <p class="terminated-status">Status: Terminated</p>
+                                          {% endif %}
+                                      </div>
+                                  </div>
+                              </a>
+                              {% endfor %}
+                          {% else %}
+                            <div>
+                                <p>No project to display</p>
+                            </div>
+                          {% endif %}
+                      {% else %}
+
+                        {% if candidate_projects %}
+                            <p>Track your project progress</p>    
+                            {% for project in candidate_projects %}
+                            <a href="{% url 'project_progress' project_id=project.id %}" style="text-decoration: none;color: #000;">
+                                <div class="profile-section p-4 rounded shadow-sm" style="border: 1px solid #e0e0e0;" id="profileSection">
+                                    {% if project.image %}
+                                        <div class="project-image" style="margin-right: 15px;">
+                                            <img src="{{ project.image.url }}" alt="Project Image" class="project-image-thumbnail" style="width: 100px; height: 100px; object-fit: cover;">
+                                        </div>
+                                    {% endif %}
+                                    <div class="profile-info">
+                                        <h5>Project {{ project.id }}: <span> {{ project.name }}</span></h5>
+                                        <p><strong>Client Name:</strong> {{ project.client_name }}</p>
+                                        <p><strong>Project Costing:</strong> {{ project.project_costing }}</p>
+                                        {% if project.status == 'terminated' %}
+                                            <p class="terminated-status">Status: Terminated</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        {% else %}
+                            <div>
+                                <p>No project to display</p>
+                            </div>
                         {% endif %}
-                    </div>
-                    <div class="ml-auto" style="display: flex; right: 20px; position: absolute;">
-                        <a href="{% url "profile_edit" %}"><span class="edit-icon"><i class="fa-regular fa-pen-to-square"></i></span></a>
-                    </div>
-                </div>
-                <div>
-                    <!-- Display attempts left only for candidates -->
-                    {% if request.session.user_role == "Candidate" %}
-                    <h5 class="balance m-3">Attempts left : <span>3</span></h5>
-                    {% endif %}
-                </div>
-            </div>
+                      {% endif %}
+                  </div>
 
-            <div class="card card-custom mb-4">
-                <!-- Display resume upload only for candidates -->
-                {% if request.session.user_role == "Candidate" %}
-                <h5>Resume</h5>
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <button type="submit" class="px-3" data-toggle="modal" data-target="#resumeModal"><span>View Resume</span></button>
-                    </div>
-                    <div class="ml-auto">
-                        <input type="file" id="fileInput" style="display:none;">
-                        <button type="uploadButton" id="uploadButton" class="px-3"><span><i class="fa-solid fa-upload"></i></span></button>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
+              </div>
           </div>
-
-            
-          {% comment %} project section start {% endcomment %}
-          <div id="projectsSection" class="content-section">
-              <h4 class="section-heading">Projects / Experience</h4>
-              <p>Below is a summary of my professional projects and experiences:</p>
-
-              {% if project_experiences %}
-                {% for project in project_experiences %}
-                  <div class="card card-custom mb-4">
-                    <h5>Project {{project.id}}: <span> {{ project.title }}</span></h5>
-                    <div class="d-flex align-items-center">
-                      <div class="profile" style="margin-right: 15px;">
-                        <img src="{% if user_profile.profile_image %}{{ user_profile.profile_image.url }}{% else %}{% static 'assets/alchemyrefiner_alchemymagic_2_e5784fc4-a8ed-4dfc-ba42-a091b7aa846a_0.jpg' %}{% endif %}" alt="Profile" class="profile-image">
-                      </div>
-                      <div>
-                        <p><strong>Contribution:</strong>{{ project.contribution }}</p>
-                        <p><strong>Technologies:</strong>{{ project.technologies }}</p>
-                        <p><strong>Description:</strong>{{ project.description }}</p>
-                      </div>
-                    </div>
-                  </div>       
-                  {% endfor %}
-                  <a href="{% url "add_project" %}"><button type="button" class="px-3" data-toggle="modal" data-target="#addProjectModal"><span>Add Project / Experience</span></button></a>
-              {% else %}
-                <div class="no-projects">
-                  <p>No projects or experiences to display.</p>
-                  <a href="{% url "add_project" %}"><button type="button" class="px-3" data-toggle="modal" data-target="#addProjectModal"><span>Add Project / Experience</span></button></a>
-                </div>
-              {% endif %}    
-                
-              </div>
-          {% comment %} project section end {% endcomment %}
-
-          {% comment %}  BILL AND PAYMENT SECTION {% endcomment %}
-          <div id="billingSection" class="content-section">
-            <h4 class="section-heading">Billing & Payments</h4>
-            <p>Manage your billing information and payment methods here:</p>
-            <!-- Add your billing and payments content here -->
-
-            <div class="card card-custom mb-4">
-              <h3 class="balance mb-5">Balance : <span>10.00$</span> </h3>
-              <div class="d-flex align-items-center">
-                <div class="withdraw">
-                  <button type="button"  class="px-3"><span>Withdraw</span></button>
-                </div>
-              </div>
-            </div>
-
-            <div class="card card-custom mb-4">
-              <h5 class="mb-4">Payment Methods</h5>
-              <div class="d-flex flex-column">
-                <div class="mb-4">
-                  <p>You haven’t set up any billing methods yet. Add a method so you can hire when you’re ready.</p>
-                </div>
-                <div>
-                  <button type="button" class="px-3" data-toggle="modal" data-target="#paymentMethodModal"><span>+ Add Payment Method</span></button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Project Completed start -->
-          <div id="projectcompleteSection" class="content-section">
-            <h4 class="section-heading">Project Completed</h4>
-            <p>Submit the link to your completed project:</p>
-
-            <form id="completedProjectForm">
-              <div class="form-group mb-4">
-                <label for="projectLink" class="mb-2">Project Link</label>
-                <input type="url" class="form-control" id="projectLink" placeholder="Enter your project link" required>
-              </div>
-              <div>
-                <button type="submit" class="px-3"><span>Submit</span></button>
-              </div>
-            </form>
-          </div>
-          <!-- Project Completed end -->
-
-          <!-- test section start -->
-          <div id="testSection" class="content-section">
-            <h4 class="section-heading">Take your Test</h4>
-            <p>Start your test and submit your answer link below:</p>
-
-            <!-- Start Test Button -->
-            <div class="card card-custom mb-4">
-              <div class="d-flex align-items-center">
-                <a href="{% url "rules_and_regulations" %}"><button type="button" class="px-3"><span>Start Test</span></button></a>
-              </div>
-            </div>
-
-            <!-- Submit Answer Link -->
-            <div class="card card-custom mb-4">
-              <div class="form-group mb-4">
-                <label for="answerLink" class="mb-2">Submit your answer link:</label>
-                <input type="url" class="form-control" id="answerLink" placeholder="Enter the link to your test answer">
-              </div>
-              <div class="d-flex align-items-center">
-                <button type="button" class="px-3" id="submitAnswerLinkButton"><span>Submit Link</span></button>
-              </div>
-            </div>
-          </div>
-          <!-- test section end -->
-
-
-          <!-- Connect With -->
-
-          <div id="connectSection" class="content-section">
-            <h4 class="section-heading">Connect With</h4>
-            <p>Add your social media links here:</p>
-            <div class="card card-custom mb-4">
-              <h5 class="mb-4">Social Media Links</h5>
-              <div id="socialMediaLinksContainer" class="d-flex flex-column mb-4">
-                <p id="noLinksMessage">No social media links added yet. Add your social media links to connect with others.</p>
-              </div>
-              <div>
-                <button type="button" class="px-3" data-toggle="modal" data-target="#socialMediaModal"><span>+ Add Social Media Link</span></button>
-              </div>
-            </div>
-          </div>
-
-        </div>
       </div>
-    </div>
+  </div>
+{% endblock %}
 
-    <!-- Resume Modal -->
-    <div class="modal fade" id="resumeModal" tabindex="-1" aria-labelledby="resumeModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="resumeModalLabel">Your Resume</h5>
-            <button type="button" class=" px-3" data-dismiss="modal" aria-label="Close">
-              <span><i class="fa-solid fa-xmark"></i></span>
-            </button>
-          </div>
-          <div class="modal-body">
-            <!-- Assuming the resume is a PDF embedded in the modal -->
-            <embed src="/path/to/your/resume.pdf" type="application/pdf" width="100%" height="600px" />
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="px-3" data-dismiss="modal"><span>Close</span></button>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Payment Method Modal -->
-    <div class="modal fade" id="paymentMethodModal" tabindex="-1" aria-labelledby="paymentMethodModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="paymentMethodModalLabel">Add Payment Method</h5>
-            <button type="button" class=" px-3" data-dismiss="modal" aria-label="Close">
-              <span><i class="fa-solid fa-xmark"></i></span>
-            </button>
-          </div>
-          <div class="modal-body">
-            <div class="list-group">
-              <a href="#" class="list-group-item list-group-item-action" data-toggle="modal" data-target="#debitCardModal" data-dismiss="modal">Add Debit Card</a>
-              <a href="#" class="list-group-item list-group-item-action" data-toggle="modal" data-target="#onlinePaymentModal" data-dismiss="modal">Online Payment Method</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+{% block extra_js %}
+<script>
+  // Function to show content and manage the active link
+  function showContent(sectionId) {
 
-    <!-- Debit Card Modal -->
-    <div class="modal fade" id="debitCardModal" tabindex="-1" aria-labelledby="debitCardModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="debitCardModalLabel">Add Debit Card</h5>
-            <button type="button" class=" px-3" data-dismiss="modal" aria-label="Close">
-              <span><i class="fa-solid fa-xmark"></i></span>
-            </button>
-          </div>
-          <div class="modal-body">
-            <form>
-              <div class="form-group">
-                <label for="cardNumber">Card Number</label>
-                <input type="number" class="form-control" id="cardNumber" placeholder="Enter card number">
-              </div>
-              <div class="form-group">
-                <label for="cardName">Name on Card</label>
-                <input type="text" class="form-control" id="cardName" placeholder="Enter name on card">
-              </div>
-              <div class="form-group">
-                <label for="expiryDate">Expiry Date</label>
-                <input type="date" class="form-control" id="expiryDate" placeholder="MM/YY">
-              </div>
-              <div class="form-group">
-                <label for="cvv">CVV</label>
-                <input type="text" class="form-control" id="cvv" placeholder="CVV">
-              </div>
-              <button type="submit" class="px-3 "><span>Add Card</span></button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
+    var sections = document.getElementsByClassName('content-section');
+    for (var i = 0; i < sections.length; i++) {
+        sections[i].style.display = 'none';
+    }
 
-    <!-- Online Payment Modal -->
-    <div class="modal fade" id="onlinePaymentModal" tabindex="-1" aria-labelledby="onlinePaymentModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="onlinePaymentModalLabel">Online Payment Method</h5>
-            <button type="button" class=" px-3" data-dismiss="modal" aria-label="Close">
-              <span><i class="fa-solid fa-xmark"></i></span>
-            </button>
-          </div>
-          <div class="modal-body">
-            <form>
-              <div class="form-group">
-                <label for="paymentMethod">Select Payment Method</label>
-                <select class="form-control" id="paymentMethod">
-                  <option>PayPal</option>
-                  <option>Google Pay</option>
-                  <option>Apple Pay</option>
-                  <option>Stripe</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="paymentId">Payment ID</label>
-                <input type="text" class="form-control" id="paymentId" placeholder="Enter payment ID">
-              </div>
-              <button type="submit" class="px-3"><span>Add Payment Method</span></button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
+    document.getElementById(sectionId).style.display = 'block';
 
-    <!-- Social Media Modal -->
-    <div class="modal fade" id="socialMediaModal" tabindex="-1" aria-labelledby="socialMediaModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="socialMediaModalLabel">Add Social Media Link</h5>
-            <button type="button" class=" px-3" data-dismiss="modal" aria-label="Close">
-              <span><i class="fa-solid fa-xmark"></i></span>
-            </button>
-          </div>
-          <div class="modal-body">
-            <form id="socialMediaForm">
-              <div class="form-group">
-                <label for="socialMediaPlatform">Select Platform</label>
-                <select class="form-control" id="socialMediaPlatform">
-                  <option>GitHub</option>
-                  <option>LinkedIn</option>
-                  <option>Twitter</option>
-                  <option>Facebook</option>
-                  <option>Instagram</option>
-                  <option>Other</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="socialMediaLink">Profile Link</label>
-                <input type="url" class="form-control" id="socialMediaLink" placeholder="Enter your profile link">
-              </div>
-              <button type="submit" class="px-3 mt-2"><span>Add Link</span></button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
+    var links = document.getElementsByClassName('nav-link');
+    for (var i = 0; i < links.length; i++) {
+        links[i].classList.remove('active');
+    }
+
+    event.target.classList.add('active');
+
+    localStorage.setItem('activeSection', sectionId);
+  }
+
+  window.onload = function () {
+    var activeSection = localStorage.getItem('activeSection');
+
+    if (activeSection) {
+        showContent(activeSection);
+    } else {
+        document.getElementsByClassName('content-section')[0].style.display = 'block';
+    }
+  }
+</script>
 
 {% endblock %}

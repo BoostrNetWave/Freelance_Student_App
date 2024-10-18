@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
-
+import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -23,13 +23,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-(*u_jb_s)#i^(vgdv#1of#4qz49+$3ttgiv*(@+h%zo3bh7(s8'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = 'True'
 
-ALLOWED_HOSTS = []
-
-# DEBUG = False
-
-# ALLOWED_HOSTS = ['yourdomain.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 
 # Application definition
@@ -52,8 +48,13 @@ INSTALLED_APPS = [
     'payment',
     'aboutUs',
     'examination',
+    'password_reset',
+    'progress_tracker',
+    'admin_customization',
     'tinymce',
     'channels',
+    'notifications',
+    
     
 ]
 
@@ -66,6 +67,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'signUp.middleware.UpdateLastActivityMiddleware',
+    'admin_customization.middleware.TrafficLoggingMiddleware'
 ]
 
 ROOT_URLCONF = 'Student_project.urls'
@@ -88,7 +90,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'Student_project.wsgi.application'
 
-ASGI_APPLICATION = 'your_project.asgi.application'
+# ASGI_APPLICATION = 'your_project.asgi.application'
+ASGI_APPLICATION = 'Student_project.asgi.application'
+
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
@@ -104,6 +108,7 @@ DATABASES = {
 }
 
 
+#for live database
 
 # DATABASES = {
 #     'default': {
@@ -117,13 +122,15 @@ DATABASES = {
 # }
 
 
+FILE_CHARSET = 'utf-8'
+
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
+    # {
+    #     'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    # },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
     },
@@ -133,6 +140,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
+    {
+        'NAME': 'signUp.validators.CustomPasswordValidator',
+    },
 ]
 
 
@@ -141,7 +151,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+# TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 
@@ -155,11 +166,10 @@ STATIC_URL = 'static/'
 # STATIC_ROOT = BASE_DIR / 'static'
 
 STATICFILES_DIRS = [
-    BASE_DIR , 'static'
+    BASE_DIR / 'static',
 ]
 
 
-import os
 
 MEDIA_URL = 'media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -179,20 +189,23 @@ AUTHENTICATION_BACKENDS = [
 
 AUTH_USER_MODEL = 'signUp.CustomUser'
 
-# Set the maximum upload size
-FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5 MB
-DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5 MB
+# settings.py
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 20  # 20 MB (adjust as needed)
+FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 20  # 20 MB (adjust as needed)
+
 
 # Configure Email Settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'  # SMTP server for gmail
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'suryakingsahoo60063@gmail.com'
-EMAIL_HOST_PASSWORD = 'nzym mzyj rdll tyyu'
-DEFAULT_FROM_EMAIL = 'suryakingsahoo60063@gmail.com'
+EMAIL_HOST_USER = 'talentsprout8@gmail.com'
+EMAIL_HOST_PASSWORD = 'kucv izka arku hgqn'
+DEFAULT_FROM_EMAIL = 'talentsprout8@gmail.com'
 
-# nzym mzyj rdll tyyu
+# EMAIL_HOST_PASSWORD = 'nzym mzyj rdll tyyu'
+
 
 
 TINYMCE_DEFAULT_CONFIG = {
@@ -224,13 +237,31 @@ TINYMCE_DEFAULT_CONFIG = {
     'statusbar': True,
 }
 
+# settings.py
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'DEBUG',
+    },
+}
 
-# Stripe API keys
-# STRIPE_TEST_SECRET_KEY = 'sk_test_51PULQQSDtrc6CVhb71C4be1XRzlED7yJ5FVDe0H6eCuCyjgfEaMBsQyz3iITjzDRDHetXxZBiERVhPIrBFEu2gR500zY02wnzJ'
-# STRIPE_TEST_PUBLIC_KEY = 'pk_test_51PULQQSDtrc6CVhbNy1iCKKK93kyLSvfpA6GRJrQce3O7ufT89V9GP9lZiXngpWHH7S8uQzkwfdNwkuJh9C8Nywg00uIPy8Atq'
-# DJSTRIPE_FOREIGN_KEY_TO_FIELD = "id"
-# DJSTRIPE_WEBHOOK_SECRET = "your_webhook_secret"
-# # Add Stripe keys to settings
-# # STRIPE_LIVE_MODE = False  # Set to True when ready to go live
-# # STRIPE_SECRET_KEY = STRIPE_TEST_SECRET_KEY if not STRIPE_LIVE_MODE else 'your_live_secret_key'
-# # STRIPE_PUBLIC_KEY = STRIPE_TEST_PUBLIC_KEY if not STRIPE_LIVE_MODE else 'your_live_public_key'
+# settings.py
+USE_I18N = True
+
+
+
+# Razorpay
+
+RAZORPAY_KEY_ID = 'rzp_live_JKw17fibb1IAuG'
+RAZORPAY_KEY_SECRET = '5ubXerl3jfHhzDVjkdQbHBGK'
+
+SECURE_SSL_REDIRECT = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False

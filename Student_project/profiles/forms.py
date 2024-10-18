@@ -1,34 +1,51 @@
 from django import forms
-from .models import UserProfile, ProjectExperience
-from django.contrib.auth.forms import PasswordChangeForm ,UserChangeForm
+from .models import UserProfile, ProjectExperience ,SocialLink
 from django.contrib.auth import authenticate
 from signUp.models import CustomUser
+from datetime import date, timedelta
+from tinymce.widgets import TinyMCE
 
 class UserProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
-        fields = ['dob', 'phone', 'address', 'role', 'position', 'experience', 'skills', 'languages', 'education', 'vat_id', 'profile_image']
+        fields = ['dob', 'phone', 'country', 'state', 'city', 'address', 'postal_code', 'role', 'position', 'experience', 'skills', 'languages', 'education', 'university', 'vat_id', 'profile_image','resume']
         
     def __init__(self, *args, **kwargs):
         super(UserProfileForm, self).__init__(*args, **kwargs)
         self.fields['dob'].widget = forms.DateInput(attrs={'type': 'date', 'class': 'input', 'autocomplete': 'off'})
         self.fields['phone'].widget.attrs.update({'class': 'input', 'autocomplete': 'off' })
+        self.fields['country'].widget.attrs.update({'class': 'input', 'autocomplete': 'off' })
+        self.fields['state'].widget.attrs.update({'class': 'input', 'autocomplete': 'off' })
+        self.fields['city'].widget.attrs.update({'class': 'input', 'autocomplete': 'off' })
         self.fields['address'].widget.attrs.update({'class': 'input', 'autocomplete': 'off' })
+        self.fields['postal_code'].widget.attrs.update({'class': 'input', 'autocomplete': 'off' })
         self.fields['role'].widget.attrs.update({'class': 'input', 'autocomplete': 'off'})
         self.fields['position'].widget.attrs.update({'class': 'input', 'autocomplete': 'off'})
         self.fields['experience'].widget.attrs.update({'class': 'input', 'autocomplete': 'off'})
         self.fields['skills'].widget.attrs.update({'class': 'input', 'autocomplete': 'off'})
         self.fields['languages'].widget.attrs.update({'class': 'input', 'autocomplete': 'off'})
         self.fields['education'].widget.attrs.update({'class': 'input', 'autocomplete': 'off'})
+        self.fields['university'].widget.attrs.update({'class': 'input', 'autocomplete': 'off'})
         self.fields['vat_id'].widget.attrs.update({'class': 'input', 'autocomplete': 'off'})
         self.fields['profile_image'].widget.attrs.update({'class': 'input', 'type': 'file'})
+        self.fields['resume'].widget.attrs.update({'class': 'input', 'type': 'file'})
+        
+    def clean_dob(self):
+        dob = self.cleaned_data.get('dob')
+        if dob:
+            today = date.today()
+            min_age_date = today - timedelta(days=365*27)
+            max_age_date = today - timedelta(days=365*18)
+            if not (min_age_date <= dob <= max_age_date):
+                raise forms.ValidationError("Date of birth must be between 18 and 27 years from today.")
+        return dob        
 
 class ProjectExperienceForm(forms.ModelForm):
     class Meta:
         model = ProjectExperience
         fields = ['title', 'contribution', 'technologies', 'duration', 'description']
         widgets = {
-            'description': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
+            'description': TinyMCE(attrs={'class': 'form-control', 'rows': 8}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -39,6 +56,28 @@ class ProjectExperienceForm(forms.ModelForm):
         self.fields['duration'].widget.attrs.update({'class': 'form-control', 'autocomplete': 'off'})
         self.fields['description'].widget.attrs.update({'class': 'form-control', 'autocomplete': 'off'})   
     
+    
+class SocialLinkForm(forms.ModelForm):
+    PLATFORM_CHOICES = [
+        ('linkedin', 'LinkedIn'),
+        ('github', 'GitHub'),
+        ('twitter', 'Twitter'),
+        ('facebook', 'Facebook'),
+        ('instagram', 'Instagram'),
+        ('website', 'Website'),
+    ]
+
+    platform = forms.ChoiceField(
+        choices=PLATFORM_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
+    class Meta:
+        model = SocialLink
+        fields = ['platform', 'link']
+        widgets = {
+            'link': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'Enter profile link'}),
+        }
     
 class CustomPasswordChangeForm(forms.Form):
     old_password = forms.CharField(
@@ -87,11 +126,18 @@ class EditUserForm(forms.ModelForm):
     class Meta:
         model = CustomUser
         fields = ['first_name', 'last_name', 'email', 'phone']  # include all relevant fields
-        def __init__(self, *args, **kwargs):
-            super(EditUserForm, self).__init__(*args, **kwargs)
         widgets = {
-            'first_name': forms.TextInput(attrs={'class':'form-control', 'placeholder': 'First Name'}),
-            'last_name': forms.TextInput(attrs={'class':'form-control', 'placeholder': 'Last Name'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First Name'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last Name'}),
             'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone Number'}),
-            'email': forms.EmailInput(attrs={'class':'form-control', 'placeholder': 'Email Address'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email Address'}),
         }
+        
+    def __init__(self, *args, **kwargs):
+        super(EditUserForm, self).__init__(*args, **kwargs)
+
+    def clean_phone(self):
+        phone = self.cleaned_data.get('phone')
+        if len(phone) != 10 or not phone.isdigit():
+            raise forms.ValidationError("Phone number must be exactly 10 digits.")
+        return phone

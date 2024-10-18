@@ -6,9 +6,8 @@ Add Project / Experience
 {% endblock %}
 
 {% block head_css %}
-<link rel="stylesheet" href="{% static 'css/style.css' %}">
-<!-- Include CKEditor -->
-<script src="https://cdn.ckeditor.com/ckeditor5/35.3.0/classic/ckeditor.js"></script>
+<link rel="stylesheet" href="{% static 'css/Layout.css' %}">
+<link rel="stylesheet" href="{% static 'css/social_Icon_list.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -41,13 +40,15 @@ Add Project / Experience
                         <label for="id_description" class="form-label">Description</label>
                         {{ form.description }}
                     </div>
+                    
                     {% if messages %}
-                        <ul>
-                            {% for message in messages %}
-                                <li>{{ message }}</li>
-                            {% endfor %}
-                        </ul>
+                        {% for message in messages %}
+                            {% if 'add_project' in message.tags %}
+                                <div class="alert {{ message.tags }}">{{ message }}</div>
+                            {% endif %}
+                        {% endfor %}
                     {% endif %}
+                    
                     <button type="submit" class="btn btn-dark border-0 rounded-3"><span>Save Project</span></button>
                 </form>
             </div>
@@ -55,14 +56,17 @@ Add Project / Experience
     </div>
   </div>
 </div>
+
 {% endblock %}
-{% comment %} 
-{% block scripts %}
+
+{% block extra_js %}
+<script src="{% static 'tinymce/tinymce.min.js' %}"></script>
 <script>
-    ClassicEditor
-        .create(document.querySelector('#id_description'))
-        .catch(error => {
-            console.error(error);
-        });
+    tinymce.init({
+        selector: 'textarea.tinymce',
+        menubar: false,
+        plugins: 'link code',
+        toolbar: 'undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | code'
+    });
 </script>
-{% endblock %} {% endcomment %}
+{% endblock %}
